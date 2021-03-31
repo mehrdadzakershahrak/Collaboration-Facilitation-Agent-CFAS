@@ -1,0 +1,57 @@
+{
+  "name": "BlackForest",
+  "version": "1.0.0",
+  "description": "",
+  "main": "gulpfile.js",
+  "watch": {
+    "js-sync": "./view_controller/*.js",
+    "style-sync": "./style/*.scss"
+  },
+  "scripts": {
+    "watch-js": "npm-watch js-sync",
+    "watch-style": "npm-watch style-sync",
+    "js-sync": "gulp js",
+    "style-sync": "gulp style"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "babel-preset-react": "^6.24.1",
+    "concat": "^1.0.3",
+    "foundation-sites": "^6.6.3",
+    "gulp": "^4.0.2",
+    "gulp-babel": "^8.0.0",
+    "jquery": "^3.5.1",
+    "jquery-ui": "^1.12.1",
+    "merge-files": "^0.1.2",
+    "motion-ui": "^2.0.3",
+    "node-sass": "^5.0.0",
+    "npm-watch": "^0.7.0",
+    "react": "^17.0.1",
+    "react-countdown": "^2.3.1",
+    "react-dom": "^17.0.1",
+    "uuid": "^8.3.2",
+    "what-input": "^5.1.2"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.12.1",
+    "@babel/core": "^7.12.7",
+    "@babel/plugin-syntax-jsx": "^7.12.1",
+    "@babel/plugin-transform-runtime": "^7.12.1",
+    "@babel/preset-env": "^7.12.7",
+    "@babel/preset-react": "^7.12.5",
+    "autoprefixer": "^9.1.5",
+    "babel-loader": "^8.1.0",
+    "browser-sync": "^2.18.13",
+    "gulp": "^4.0.0",
+    "gulp-concat": "^2.6.1",
+    "gulp-load-plugins": "^1.1.0",
+    "gulp-postcss": "^8.0.0",
+    "gulp-sass": "^4.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zurb/foundation-sites-template.git"
+  },
+  "private": true
+}

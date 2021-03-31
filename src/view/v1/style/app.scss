@@ -1,0 +1,461 @@
+@charset 'utf-8';
+
+@import 'settings';
+@import 'foundation';
+@import 'motion-ui';
+
+// Global styles
+@include foundation-global-styles;
+@include foundation-forms;
+@include foundation-typography;
+
+// Grids (choose one)
+@include foundation-xy-grid-classes;
+// @include foundation-grid;
+// @include foundation-flex-grid;
+
+// Generic components
+@include foundation-button;
+@include foundation-button-group;
+@include foundation-close-button;
+@include foundation-label;
+@include foundation-progress-bar;
+@include foundation-slider;
+@include foundation-switch;
+@include foundation-table;
+// Basic components
+@include foundation-badge;
+@include foundation-breadcrumbs;
+@include foundation-callout;
+@include foundation-card;
+@include foundation-dropdown;
+@include foundation-pagination;
+@include foundation-tooltip;
+
+// Containers
+@include foundation-accordion;
+@include foundation-media-object;
+@include foundation-orbit;
+@include foundation-responsive-embed;
+@include foundation-tabs;
+@include foundation-thumbnail;
+// Menu-based containers
+@include foundation-menu;
+@include foundation-menu-icon;
+@include foundation-accordion-menu;
+@include foundation-drilldown-menu;
+@include foundation-dropdown-menu;
+
+// Layout components
+@include foundation-off-canvas;
+@include foundation-reveal;
+@include foundation-sticky;
+@include foundation-title-bar;
+@include foundation-top-bar;
+
+// Helpers
+@include foundation-float-classes;
+@include foundation-flex-classes;
+@include foundation-visibility-classes;
+// @include foundation-prototype-classes;
+
+// Motion UI
+@include motion-ui-transitions;
+@include motion-ui-animations;
+
+*{
+    padding: 0;
+    margin: 0;
+}
+
+iframe{
+    overflow:hidden;
+}
+
+#dash-logout-btn {
+    margin-top: .25em;
+    margin-left: 2em;
+}
+
+.content {
+    width: 1000pt;
+    margin: auto;
+    padding: 0pt;
+}
+
+.resources {
+    padding: 1em 2em 1em 2em;
+    border-color: gray;
+    border-width: 1pt;
+    border-style: solid;
+    background-color: rgb(255, 255, 177);
+}
+
+.avail_player_table {
+    width: 100%;
+}
+
+.player-template-list {
+    margin-left: 2em;
+    margin-right: 2em;
+}
+
+.player-template-list li {
+    padding-bottom: 1em;
+}
+
+.players {
+    width: calc(50% - 22pt);
+    height: 200pt;
+    padding: 10pt;
+    border-color: gray;
+    border-width: 1pt;
+    border-style: solid;
+    background-color: rgb(144, 240, 253);
+}
+
+.trade {
+    height: 200pt;
+    padding: 10pt;
+    border-color: gray;
+    border-width: 1pt;
+    border-style: solid;
+    background-color: rgb(173, 255, 207);
+}
+
+.trade_proposals {
+    border-color: gray;
+    border-width: 1pt;
+    border-style: solid;
+    background-color: rgb(255, 138, 117);
+}
+
+.log {
+    border-color: gray;
+    border-width: 1pt;
+    border-style: solid;
+    background-color: gray;
+}
+
+.sect-label {
+    font-weight: bold;
+    font-size: 1em;
+}
+
+.dest-sect-label {
+    font-weight: bold;
+    font-size: .8em;
+}
+
+.rtile {
+    width: 12em;
+    margin: 0 auto;
+    margin-top:.5em;
+    text-align: center;
+    font-weight: bold;
+    border-color: gray;
+    border-width: 1pt;
+    border-style: solid;
+    // box-shadow: 5pt 10pt 18pt gray;
+    background-color: white;
+}
+
+.tg  {border-collapse:collapse;border-spacing:0;}
+.tg td{border-color:black;border-style:solid;border-width:1pt;font-family:Arial, sans-serif;font-size:14pt;
+  overflow:hidden;padding:10pt 5pt;word-break:normal;}
+.tg th{border-color:black;border-style:solid;border-width:1pt;font-family:Arial, sans-serif;font-size:14pt;
+  font-weight:normal;overflow:hidden;padding:10pt 5pt;word-break:normal;}
+.tg .tg-1wig{font-weight:bold;text-align:left;vertical-align:top;width:100pt; background-color: white ;}
+.tg .tg-baqh{text-align:center;vertical-align:top; background-color:white;}
+.tg .tg-0lax{text-align:left;vertical-align:top; background-color: white;}
+
+.trade_propose_btn {
+    width: 300pt;
+}
+
+.ttile {
+    width: 191pt;
+    float: left;
+    margin: 10pt;
+    padding: 10pt;
+    border-color: gray;
+    border-width: 1pt;
+    border-style: solid;
+    box-shadow: 5pt 10pt 18pt gray;
+    background-color: white;
+}
+
+.otile {
+    width: 325pt;
+    height: 20pt;
+    border-color: gray;
+    border-width: 1pt;
+    border-style: solid;
+    box-shadow: 1pt 2pt 3pt gray;
+    background-color: white;
+    text-align: center;
+    margin: 0 auto;
+    margin-bottom: 15pt;
+}
+
+.log {
+    margin-top: 2.5em;
+}
+
+.trade_accept_button {
+    width: 90pt;
+    height: 38pt;
+    margin-left: 10pt;
+    margin-right: 10pt;
+    margin-top: 12pt;
+    margin-bottom:12pt;
+    padding: 10pt;
+}
+
+.trade_proposals {
+    text-align: center;
+}
+
+.tradetile {
+    width: 325pt;
+    height: 20pt;
+    margin-left: 10pt;
+    margin-right: 10pt;
+    margin-top: 10pt;
+    margin-bottom: 10pt;
+    padding: 10pt;
+    border-color: gray;
+    border-width: 1pt;
+    border-style: solid;
+    box-shadow: 1pt 2pt 3pt gray;
+    background-color: white;
+}
+
+.tr-template-1 {
+    background-color: #F5F5F5;
+}
+
+.disabled {
+    background-color: #d9d9d9;
+}
+
+.tr-template-2 {
+    background-color: #3499fd;
+}
+
+.tr-template-3 {
+    background-color: #ff1e1e8f;
+}
+
+.table-header {
+    background-color: #1E90FF;
+}
+
+.selector {
+    margin: 7pt;
+    padding: 3pt;
+    width: 90pt;
+    height: 42pt;
+}
+
+.chart-hr {}
+
+.playertimer {
+    text-align: center;
+}
+
+.button_half {
+    width: 218pt;
+    margin: 10pt;
+    padding: 10pt 0 10pt 0;
+}
+
+.log_text {
+    height: 24.4375rem;
+}
+
+.lobby_input {
+    width: 100%;
+    height: 30pt;
+    margin: 0;
+    padding: 0;
+}
+
+.overlay {
+    position: fixed;
+    display: block;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 2;
+    cursor: pointer;
+  }
+
+.overlay_text{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    font-size: 50pt;
+    color: white;
+    transform: translate(-50%,-50%);
+    -ms-transform: translate(-50%,-50%);
+}
+
+.information {
+    margin-top: 10pt;
+    height: 30pt;
+}
+
+input[type=text], select {
+    width: 100%;
+    padding: 6pt 10pt;
+    margin: 8pt 0;
+    display: block;
+    border: 1pt solid #ccc;
+    border-radius: 4pt;
+    box-sizing: border-box;
+}
+
+.create_game_btn {
+    width: 100%;
+    background-color: #4CAF50;
+    color: white;
+    padding: 14pt 20pt;
+    margin: 8pt 0;
+    border: none;
+    border-radius: 4pt;
+    cursor: pointer;
+}
+
+.create_game_btn:hover {
+    background-color: #45a049;
+}
+
+.priority-sel-item {
+    cursor: "not-allowed";
+    background-color: #e2e2e2;
+    border-radius: 25pt;
+    border: 2pt solid #e2e2e2;
+    padding: 8pt;
+    text-align: center;
+    width: 135pt;
+    height: 38pt;
+    margin-bottom: .5em;
+    margin-top: 0.5em;
+}
+
+.create_game_container {
+    width: 21em;
+    padding: 10pt;
+    border-color: gray;
+    border-width: 1pt;
+    border-style: solid;
+}
+
+.template_view {
+    width: 38em;
+    padding: 10pt;
+    border-color: gray;
+    border-width: 1pt;
+    border-style: solid;
+}
+
+table, th, td {
+    border: 1pt solid black;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 5pt;
+    width: 20%;
+}
+th {
+    text-align: left;
+}
+
+.resource_sect {
+    text-align: center;
+}
+
+.resource_propose {
+    padding: 1em 3em 1em 3em;
+    margin: 0 auto;
+    margin: 0 0 2em 0;
+    margin-left: 1em;
+    margin-right: 1em;
+}
+
+.offer_input {
+    width: 50%;
+}
+
+.dash-title {
+    margin-top: .5em;
+    margin-left: 1em;
+}
+
+.player_template_select {
+    width: 55%;
+    height: 40pt;
+    margin-right:4em;
+    padding-right: 1.5em;
+}
+
+.player-sel {
+    width: 80%;
+    padding-right:2em;
+}
+
+.game-id-title {
+    font-weight: bold;
+}
+
+option:checked {
+    box-shadow: 0 0 10px 100px #ffb7b7 inset;
+}
+
+.resources-group, .trucks {
+  font-size: 1.2em;
+}
+
+.resources, .trucks {
+    margin-bottom: 2em;
+}
+
+.player_template_label {
+    padding-top: 15pt;
+    margin: 0;
+}
+
+.value_input {
+    width: 40pt;
+    height: 25pt;
+    margin: 7pt;
+    padding: 3pt;
+}
+
+#maindash-buttons {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+
+    li {
+        float: left;
+
+        a {
+            display: block;
+            text-align: center;
+            padding: 1em;
+            text-decoration: none;
+        }
+    }
+}
+
+#offer_select {
+    width: 98%;
+    padding-right: 2em;
+}

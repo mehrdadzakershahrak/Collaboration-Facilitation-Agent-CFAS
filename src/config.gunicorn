@@ -1,0 +1,15 @@
+# -*- coding: utf-8 -*-
+
+import multiprocessing
+import os
+
+from distutils.util import strtobool
+
+bind = os.getenv('BF_WEB_BIND', '0.0.0.0:5000')
+accesslog = '-'
+access_log_format = "%(h)s %(l)s %(u)s %(t)"
+
+workers = int(os.getenv('BF_GUNICORN_WORKERS', multiprocessing.cpu_count()*2))
+threads = int(os.getenv('BF_MAX_THREADS', 2))
+
+reload = bool(strtobool(os.getenv('BF_WEB_RELOAD', 'false')))
