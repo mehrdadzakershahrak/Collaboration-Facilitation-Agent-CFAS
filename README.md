@@ -89,9 +89,9 @@ OR
 > python Blackforest/src/main.py
 
 ### 5. Important links
-Create Mission Page = http://127.0.0.1:5000/
-Player Login - http://127.0.0.1:5000/login
-Admin Login - http://127.0.0.1:5000/admin-login
+	Create Mission Page = http://127.0.0.1:5000/
+	Player Login - http://127.0.0.1:5000/login
+	Admin Login - http://127.0.0.1:5000/admin-login
 
 ### 6. Instructions to running the application as a background service
 
