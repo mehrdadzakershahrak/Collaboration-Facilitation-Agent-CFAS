@@ -9,17 +9,35 @@ Read about the project [here](https://docs.google.com/document/d/1ST9445dMVRlob4
 * IDE           ==> [Options](https://www.programiz.com/python-programming/ide)
 
 ### Package Dependency
-    Flask==1.1.2
-    requests==2.25.1
-    SQLAlchemy==1.3.20
-    Flask-SQLAlchemy==2.4.4
-    gevent==20.9.0
-    gevent-websocket
-    mysqlclient==2.0.3
-    socketio
-    Flask-SocketIO==4.3.2
-    Flask-Session==0.3.2
-    gunicorn==18.0
+	bidict==0.21.2
+	cachelib==0.1.1
+	cffi==1.14.5
+	click==7.1.2
+	dnspython==1.16.0
+	eventlet==0.30.2
+	Flask==1.1.2
+	Flask-Session==0.3.2
+	Flask-SocketIO==4.3.2
+	Flask-SQLAlchemy==2.5.1
+	gevent==21.1.2
+	gevent-websocket==0.10.1
+	greenlet==1.0.0
+	itsdangerous==1.1.0
+	Jinja2==2.11.3
+	MarkupSafe==1.1.1
+	mysqlclient==2.0.3
+	numpy==1.20.2
+	pycparser==2.20
+	python-dotenv==0.17.0
+	python-engineio==3.14.2
+	python-socketio==4.6.1
+	pytz==2021.1
+	six==1.15.0
+	SQLAlchemy==1.3.20
+	urllib3==1.26.4
+	Werkzeug==1.0.1
+	zope.event==4.5.0
+	zope.interface==5.3.0	
 
 ## First Time Setup
 ### 1. Clone this server repository to your root folder:
