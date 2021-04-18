@@ -1,15 +1,113 @@
-from flask import render_template
-from config import app, socketio
-import config
-from api.v1.model import nandor
-import secrets
-from flask_socketio import send, emit, join_room, leave_room
-from flask import current_app
 import copy
-import time
-import pytz
-from datetime import datetime
 import json
+import pprint
+import secrets
+import time
+from collections import OrderedDict
+from datetime import datetime
+
+import config
+import pytz
+from api.v1.model import nandor
+from config import app, socketio
+from flask import current_app
+from flask import render_template
+from flask_socketio import emit, join_room
+
+from src.api.v1.model.nandor import Trade, Goals
+
+PLAYER_ID_MAP_RESULTS = OrderedDict([(1, 'Alpha'),
+                                     (2, 'Bravo'),
+                                     (3, 'Charlie'),
+                                     (4, 'Delta')])
+
+DESTINATION_ID_MAP_RESULTS = OrderedDict([(1, 'Shelter'),
+                                          (2, 'Center'),
+                                          (3, 'Hospital'),
+                                          (4, 'Bridge')]
+                                         )
+
+IDEAL = {
+    'mission-1': OrderedDict(
+        [('priority', ['Bridge', 'Hospital', 'Distribution Center', 'Shelter']),
+         ('destination', OrderedDict(
+             [(DESTINATION_ID_MAP_RESULTS.get(1), PLAYER_ID_MAP_RESULTS.get(4)),
+              (DESTINATION_ID_MAP_RESULTS.get(2), PLAYER_ID_MAP_RESULTS.get(3)),
+              (DESTINATION_ID_MAP_RESULTS.get(3), PLAYER_ID_MAP_RESULTS.get(2)),
+              (DESTINATION_ID_MAP_RESULTS.get(4), PLAYER_ID_MAP_RESULTS.get(1))]
+         )),
+         ('trucks', OrderedDict(
+             [(1, PLAYER_ID_MAP_RESULTS.get(1)),
+              (2, PLAYER_ID_MAP_RESULTS.get(2)),
+              (3, PLAYER_ID_MAP_RESULTS.get(3)),
+              (4, PLAYER_ID_MAP_RESULTS.get(4))]
+         )),
+         ('routes', OrderedDict(
+             [(PLAYER_ID_MAP_RESULTS.get(1), 4),
+              (PLAYER_ID_MAP_RESULTS.get(2), 4),
+              (PLAYER_ID_MAP_RESULTS.get(3), 4),
+              (PLAYER_ID_MAP_RESULTS.get(4), 4)]
+         )),
+         ('num-of-moves', 6)]
+    ),
+    'mission-2': OrderedDict([
+        ('priority', ['Bridge', 'Shelter', 'Distribution Center', 'Hospital']),
+        ('destination', OrderedDict(
+            [(DESTINATION_ID_MAP_RESULTS.get(1), PLAYER_ID_MAP_RESULTS.get(2)),
+             (DESTINATION_ID_MAP_RESULTS.get(2), PLAYER_ID_MAP_RESULTS.get(1)),
+             (DESTINATION_ID_MAP_RESULTS.get(3), PLAYER_ID_MAP_RESULTS.get(4)),
+             (DESTINATION_ID_MAP_RESULTS.get(4), PLAYER_ID_MAP_RESULTS.get(3))]
+        )),
+        ('trucks', OrderedDict(
+            [(1, PLAYER_ID_MAP_RESULTS.get(1)),
+             (2, PLAYER_ID_MAP_RESULTS.get(2)),
+             (3, PLAYER_ID_MAP_RESULTS.get(4)),
+             (4, PLAYER_ID_MAP_RESULTS.get(3))]
+        )),
+        ('routes', OrderedDict(
+            [(PLAYER_ID_MAP_RESULTS.get(1), 3),
+             (PLAYER_ID_MAP_RESULTS.get(2), 3),
+             (PLAYER_ID_MAP_RESULTS.get(3), 3),
+             (PLAYER_ID_MAP_RESULTS.get(4), 3)]
+        )),
+        ('num-of-moves', 10)
+    ])
+}
+
+
+def laven_dist(list1, list2):
+    m = len(list1)
+    n = len(list2)
+    dp = [[0 for x in range(n + 1)] for x in range(m + 1)]
+
+    # Fill d[][] in bottom up manner
+    for i in range(m + 1):
+        for j in range(n + 1):
+
+            # If first string is empty, only option is to
+            # insert all characters of second string
+            if i == 0:
+                dp[i][j] = j  # Min. operations = j
+
+            # If second string is empty, only option is to
+            # remove all characters of second string
+            elif j == 0:
+                dp[i][j] = i  # Min. operations = i
+
+            # If last characters are same, ignore last char
+            # and recur for remaining string
+            elif list1[i - 1] == list2[j - 1]:
+                dp[i][j] = dp[i - 1][j - 1]
+
+                # If last character are different, consider all
+            # possibilities and find minimum
+            else:
+                dp[i][j] = 1 + min(dp[i][j - 1],  # Insert
+                                   dp[i - 1][j],  # Remove
+                                   dp[i - 1][j - 1])  # Replace
+
+    return dp[m][n]
+
 
 PLAYER_ID_MAP = {
     'A': 0,
@@ -36,9 +134,135 @@ def init_game():
     player_templates = nandor.PlayerTemplate.query.all()
 
     player_template_json = json.dumps([p.to_dict() for p in player_templates])
-
+    # return 'hello'
     return render_template('app.html', player_template_json=player_template_json, gameid=None,
                            sess=None, view='gamesetup', is_admin=None)
+
+
+@app.route('/results', methods=['GET'])
+def results():
+    content = OrderedDict()
+    sess = current_app.config['sess']
+
+    if sess.get('gameid') is not None:
+    # if True:
+        try:
+            game_id = sess.get('gameid').get('gameid')
+            selected_template = sess.get('gameid').get('sel_player_template')
+            #
+            # game_id = 'ndZA_ZM'
+            # selected_template = 2
+
+            content['game_id'] = game_id
+            content['select_template'] = selected_template
+
+            # return a list of trades with game id = game | from nandor.py read Class Trade for info
+            all_trade_moves = nandor.Trade.query.filter_by(game_id=game_id)
+
+            not_null_trade_moves = len([x for x in all_trade_moves if x.dst_player is not None])
+            # TODO replace this game id with the game id in session
+
+            # # return a list of all rows in Goals table with game id = game
+            # all_goals = nandor.Goals.query.filter_by(game_id=game)
+
+            priorities = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=0).order_by(
+                Goals.time.desc()).first()
+            destinations = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=1).order_by(
+                Goals.time.desc()).first()
+            truck = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=2).order_by(
+                Goals.time.desc()).first()
+            route = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=3).order_by(
+                Goals.time.desc()).first()
+
+            actual_priorities_list = priorities.goal[2:-2].split('", "')
+
+            actual_destinations = destinations.goal[2:-2].split('", "')
+            actual_destinations_dict = OrderedDict(
+                [
+                    (DESTINATION_ID_MAP_RESULTS.get(1), PLAYER_ID_MAP_RESULTS.get(int(actual_destinations[0]))),
+                    (DESTINATION_ID_MAP_RESULTS.get(2), PLAYER_ID_MAP_RESULTS.get(int(actual_destinations[1]))),
+                    (DESTINATION_ID_MAP_RESULTS.get(3), PLAYER_ID_MAP_RESULTS.get(int(actual_destinations[2]))),
+                    (DESTINATION_ID_MAP_RESULTS.get(4), PLAYER_ID_MAP_RESULTS.get(int(actual_destinations[3])))
+                ]
+            )
+
+            actual_trucks = truck.goal[2:-2].split('", "')
+            actual_trucks_dict = OrderedDict(
+                [
+                    (1, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[0]))),
+                    (2, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[1]))),
+                    (3, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[2]))),
+                    (4, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[3])))]
+            )
+
+            actual_route = route.goal[2:-2].split('", "')
+            actual_route_dict = OrderedDict(
+                [
+                    (PLAYER_ID_MAP_RESULTS.get(1), int(actual_route[0])),
+                    (PLAYER_ID_MAP_RESULTS.get(2), int(actual_route[1])),
+                    (PLAYER_ID_MAP_RESULTS.get(3), int(actual_route[2])),
+                    (PLAYER_ID_MAP_RESULTS.get(4), int(actual_route[3]))
+
+                ])
+
+            actuals = OrderedDict(
+                [
+                    ('priority', actual_priorities_list),
+                    ('destination', actual_destinations_dict),
+                    ('trucks', actual_trucks_dict),
+                    ('routes', actual_route_dict),
+                    ('num-of-moves', not_null_trade_moves)
+                ]
+            )
+
+            content['actual_values'] = actuals
+
+            ideal = 0
+            if selected_template == 2:
+                ideal = IDEAL['mission-1']
+            elif selected_template == 3:
+                ideal = IDEAL['mission-2']
+
+            content['ideal_values'] = ideal
+
+            priority_levenshtein = 10 - laven_dist(actuals["priority"], ideal["priority"])
+
+            destination_levenshtein = 10 - laven_dist([x for x in actuals.get('destination').values()],
+                                                      [x for x in ideal.get('destination').values()])
+
+            trucks_levenshtein = 10 - laven_dist([x for x in actuals.get('trucks').values()],
+                                                 [x for x in ideal.get('trucks').values()])
+
+            actual_route_values = [x for x in actuals.get('routes').values()]
+            ideal_route_values = [x for x in ideal.get('routes').values()]
+            route_score = 0
+            for i in actual_route_values:
+                if i == ideal_route_values[0]:
+                    route_score += 2.5
+
+            move_score = (ideal.get("num-of-moves") / actuals.get("num-of-moves")) * 10
+
+            average_score = ((
+                                     priority_levenshtein + destination_levenshtein + trucks_levenshtein + route_score + move_score) / 50) * 100
+
+            content['priority_score'] = priority_levenshtein
+            content['destination_score'] = destination_levenshtein
+            content['truck_score'] = trucks_levenshtein
+            content['route_score'] = route_score
+            content['moves_score'] = move_score
+            content['average_score'] = average_score
+
+            pp = pprint.PrettyPrinter(indent=4).pprint
+            pp(content)
+            return render_template('beautiful_results.html', content=content, title='Results')
+        except Exception as error:
+            pp = pprint.PrettyPrinter(indent=4).pprint
+            pp(error)
+            return render_template('beautiful_results.html', error=error,
+                                   title='Results - Error')
+    else:
+        return render_template('beautiful_results.html', error='No game in session - please start a new game',
+                               title='Results - Error')
 
 
 @app.route('/game/<gameid>', methods=['GET'])
@@ -83,6 +307,7 @@ def num_teams_collected():
 @socketio.on('join-game')
 def join_game(data):
     if 'gameid' in data:
+        lobby_cnt = None
         gameid = data['gameid']
 
         join_room(gameid)
@@ -92,6 +317,7 @@ def join_game(data):
             gamesess = sess[gameid]
 
             if 'is_admin' in data and data['is_admin']:
+                lobby_cnt = nandor.db.engine.execute("select count(distinct game_id) from lobby").fetchone()[0]
                 upid = None
                 cur_id = 'admin'
             else:
@@ -128,6 +354,8 @@ def join_game(data):
             payload.update({
                 'player_template': [p.to_dict() for p in player_template]
             })
+
+            payload['lobby_cnt'] = lobby_cnt
 
         emit('join-game', json.dumps(payload), json=True)
 
