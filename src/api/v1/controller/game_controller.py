@@ -147,13 +147,13 @@ def results():
     sess = current_app.config['sess']
 
     if sess.get('gameid') is not None:
-    # if True:
+        # if True:
         try:
-            # game_id = sess.get('gameid').get('gameid')
-            # selected_template = sess.get('gameid').get('sel_player_template')
-            game_id = 'ndZA_ZM'
+            game_id = sess.get('gameid').get('gameid')
+            selected_template = sess.get('gameid').get('sel_player_template')
+            # game_id = 'ndZA_ZM'
             # game_id = 'bBpSfaM'
-            selected_template = 2
+            # selected_template = 2
 
             content['game_id'] = game_id
             content['select_template'] = selected_template
@@ -168,7 +168,8 @@ def results():
             # all_goals = nandor.Goals.query.filter_by(game_id=game)
 
             # priorities = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=0).order_by(Goals.time.desc()).first()
-            priorities = nandor.db.engine.execute(f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 0 order by time DESC;").fetchone()
+            priorities = nandor.db.engine.execute(
+                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 0 order by time DESC limit 1;").fetchone()[0]
             print(f'Priority = {priorities}\n')
             print(f'Type = {type(priorities)}\t {str(type(priorities))}\n')
             # print(f'ID = {priorities.id}\tTYpe = {type(priorities.id)}\n')
@@ -181,15 +182,18 @@ def results():
             # destinations = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=1).order_by(
             #     Goals.time.desc()).first()
             destinations = nandor.db.engine.execute(
-                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 1 order by time DESC;").fetchone()
+                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 1 order by time DESC limit 1;").fetchone()[
+                0]
             # truck = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=2).order_by(
             #     Goals.time.desc()).first()
             truck = nandor.db.engine.execute(
-                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 2 order by time DESC;").fetchone()
+                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 2 order by time DESC limit 1;").fetchone()[
+                0]
             # route = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=3).order_by(
             #     Goals.time.desc()).first()
             route = nandor.db.engine.execute(
-                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 3 order by time DESC;").fetchone()
+                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 3 order by time DESC limit 1;").fetchone()[
+                0]
             # for k,v in priorities.items():
             #     print(f'{k} --> {v}')
             if type(priorities) == type(None):
@@ -280,7 +284,8 @@ def results():
 
             move_score = (ideal.get("num-of-moves") / actuals.get("num-of-moves")) * 10
             move_score = round(move_score, 1)
-            average_score = ((priority_levenshtein + destination_levenshtein + trucks_levenshtein + route_score + move_score) / 50) * 100
+            average_score = ((
+                                     priority_levenshtein + destination_levenshtein + trucks_levenshtein + route_score + move_score) / 50) * 100
             average_score = round(average_score, 1)
             content['priority_score'] = priority_levenshtein
             content['destination_score'] = destination_levenshtein
@@ -297,7 +302,7 @@ def results():
                 color = 'danger'
             pp = pprint.PrettyPrinter(indent=4).pprint
             pp(content)
-            return render_template('beautiful_results.html', content=content, title='Results', color = color)
+            return render_template('beautiful_results.html', content=content, title='Results', color=color)
         except Exception as error:
             pp = pprint.PrettyPrinter(indent=4).pprint
             pp(error)
