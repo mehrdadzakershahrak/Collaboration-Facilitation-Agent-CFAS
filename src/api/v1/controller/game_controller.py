@@ -2,7 +2,9 @@ import copy
 import json
 import pprint
 import secrets
+import sys
 import time
+import traceback
 from collections import OrderedDict
 from datetime import datetime
 
@@ -147,11 +149,11 @@ def results():
     if sess.get('gameid') is not None:
     # if True:
         try:
-            game_id = sess.get('gameid').get('gameid')
-            selected_template = sess.get('gameid').get('sel_player_template')
-            #
-            # game_id = 'ndZA_ZM'
-            # selected_template = 2
+            # game_id = sess.get('gameid').get('gameid')
+            # selected_template = sess.get('gameid').get('sel_player_template')
+            game_id = 'ndZA_ZM'
+            # game_id = 'bBpSfaM'
+            selected_template = 2
 
             content['game_id'] = game_id
             content['select_template'] = selected_template
@@ -165,17 +167,44 @@ def results():
             # # return a list of all rows in Goals table with game id = game
             # all_goals = nandor.Goals.query.filter_by(game_id=game)
 
-            priorities = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=0).order_by(
-                Goals.time.desc()).first()
-            destinations = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=1).order_by(
-                Goals.time.desc()).first()
-            truck = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=2).order_by(
-                Goals.time.desc()).first()
-            route = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=3).order_by(
-                Goals.time.desc()).first()
+            # priorities = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=0).order_by(Goals.time.desc()).first()
+            priorities = nandor.db.engine.execute(f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 0 order by time DESC;").fetchone()
+            print(f'Priority = {priorities}\n')
+            print(f'Type = {type(priorities)}\t {str(type(priorities))}\n')
+            # print(f'ID = {priorities.id}\tTYpe = {type(priorities.id)}\n')
+            # print(f'GAme_ID = {priorities.game_id}\tTYpe = {type(priorities.game_id)}\n')
+            # print(f'time = {priorities.time}\tTYpe = {type(priorities.time)}\n')
+            # print(f'src_player = {priorities.src_player}\tTYpe = {type(priorities.src_player)}\n')
+            # print(f'src_player_uid = {priorities.src_player_uid}\tTYpe = {type(priorities.src_player_uid)}\n')
+            # print(f'Goal = {priorities.goal}\tTYpe = {type(priorities.goal)}\n')
+
+            # destinations = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=1).order_by(
+            #     Goals.time.desc()).first()
+            destinations = nandor.db.engine.execute(
+                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 1 order by time DESC;").fetchone()
+            # truck = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=2).order_by(
+            #     Goals.time.desc()).first()
+            truck = nandor.db.engine.execute(
+                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 2 order by time DESC;").fetchone()
+            # route = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=3).order_by(
+            #     Goals.time.desc()).first()
+            route = nandor.db.engine.execute(
+                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 3 order by time DESC;").fetchone()
+            # for k,v in priorities.items():
+            #     print(f'{k} --> {v}')
+            if type(priorities) == type(None):
+                return render_template('beautiful_results.html',
+                                       error='There was no selected priority, please complete the game or start a new '
+                                             'one',
+                                       title='Results - Error')
 
             actual_priorities_list = priorities.goal[2:-2].split('", "')
 
+            if type(destinations) == type(None):
+                return render_template('beautiful_results.html',
+                                       error='There was no selected priority, please complete the game or start a new '
+                                             'one',
+                                       title='Results - Error')
             actual_destinations = destinations.goal[2:-2].split('", "')
             actual_destinations_dict = OrderedDict(
                 [
@@ -186,6 +215,11 @@ def results():
                 ]
             )
 
+            if type(truck) == type(None):
+                return render_template('beautiful_results.html',
+                                       error='There was no selected truck, please complete the game or start a new '
+                                             'one',
+                                       title='Results - Error')
             actual_trucks = truck.goal[2:-2].split('", "')
             actual_trucks_dict = OrderedDict(
                 [
@@ -195,6 +229,11 @@ def results():
                     (4, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[3])))]
             )
 
+            if type(route) == type(None):
+                return render_template('beautiful_results.html',
+                                       error='There was no selected route, please complete the game or start a new '
+                                             'one',
+                                       title='Results - Error')
             actual_route = route.goal[2:-2].split('", "')
             actual_route_dict = OrderedDict(
                 [
@@ -215,14 +254,13 @@ def results():
                 ]
             )
 
-            content['actual_values'] = actuals
-
             ideal = 0
             if selected_template == 2:
                 ideal = IDEAL['mission-1']
             elif selected_template == 3:
                 ideal = IDEAL['mission-2']
 
+            content['actual_values'] = actuals
             content['ideal_values'] = ideal
 
             priority_levenshtein = 10 - laven_dist(actuals["priority"], ideal["priority"])
@@ -241,20 +279,25 @@ def results():
                     route_score += 2.5
 
             move_score = (ideal.get("num-of-moves") / actuals.get("num-of-moves")) * 10
-
-            average_score = ((
-                                     priority_levenshtein + destination_levenshtein + trucks_levenshtein + route_score + move_score) / 50) * 100
-
+            move_score = round(move_score, 1)
+            average_score = ((priority_levenshtein + destination_levenshtein + trucks_levenshtein + route_score + move_score) / 50) * 100
+            average_score = round(average_score, 1)
             content['priority_score'] = priority_levenshtein
             content['destination_score'] = destination_levenshtein
             content['truck_score'] = trucks_levenshtein
             content['route_score'] = route_score
             content['moves_score'] = move_score
             content['average_score'] = average_score
-
+            color = ''
+            if average_score >= 70:
+                color = 'success'
+            elif 50 < average_score < 70:
+                color = 'warning'
+            else:
+                color = 'danger'
             pp = pprint.PrettyPrinter(indent=4).pprint
             pp(content)
-            return render_template('beautiful_results.html', content=content, title='Results')
+            return render_template('beautiful_results.html', content=content, title='Results', color = color)
         except Exception as error:
             pp = pprint.PrettyPrinter(indent=4).pprint
             pp(error)

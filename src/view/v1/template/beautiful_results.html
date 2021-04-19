@@ -78,7 +78,14 @@
     <h4>truck_score = {{content.get('truck_score')}}</h4>
     <h4>route_score = {{content.get('route_score')}}</h4>
     <h4>moves_score = {{content.get('moves_score')}}</h4>
-    <h4 class="p-3 mb-2 bg-success text-white">average_score = {{content.get('average_score')}}%</h4>
+
+    {% if color == 'success' %}
+    <h4 class="p-3 mb-2 bg-success text-white">average_score = {{ content.get('average_score') }} %</h4>
+    {% elif color == 'warning' %}
+    <h4 class="p-3 mb-2 bg-warning text-white">average_score = {{ content.get('average_score') }} %</h4>
+    {% else %}
+    <h4 class="p-3 mb-2 bg-danger text-white">average_score = {{ content.get('average_score') }} %</h4>
+    {% endif %}
 
 </div>
 {% endif %}
