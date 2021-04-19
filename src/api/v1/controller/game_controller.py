@@ -147,7 +147,7 @@ def results():
     sess = current_app.config['sess']
 
     if sess.get('gameid') is not None:
-        # if True:
+    # if True:
         try:
             game_id = sess.get('gameid').get('gameid')
             selected_template = sess.get('gameid').get('sel_player_template')
@@ -169,7 +169,7 @@ def results():
 
             # priorities = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=0).order_by(Goals.time.desc()).first()
             priorities = nandor.db.engine.execute(
-                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 0 order by time DESC limit 1;").fetchone()[0]
+                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 0 order by time DESC limit 1;").fetchone()
             print(f'Priority = {priorities}\n')
             print(f'Type = {type(priorities)}\t {str(type(priorities))}\n')
             # print(f'ID = {priorities.id}\tTYpe = {type(priorities.id)}\n')
@@ -182,18 +182,15 @@ def results():
             # destinations = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=1).order_by(
             #     Goals.time.desc()).first()
             destinations = nandor.db.engine.execute(
-                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 1 order by time DESC limit 1;").fetchone()[
-                0]
+                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 1 order by time DESC limit 1;").fetchone()
             # truck = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=2).order_by(
             #     Goals.time.desc()).first()
             truck = nandor.db.engine.execute(
-                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 2 order by time DESC limit 1;").fetchone()[
-                0]
+                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 2 order by time DESC limit 1;").fetchone()
             # route = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=3).order_by(
             #     Goals.time.desc()).first()
             route = nandor.db.engine.execute(
-                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 3 order by time DESC limit 1;").fetchone()[
-                0]
+                f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 3 order by time DESC limit 1;").fetchone()
             # for k,v in priorities.items():
             #     print(f'{k} --> {v}')
             if type(priorities) == type(None):
