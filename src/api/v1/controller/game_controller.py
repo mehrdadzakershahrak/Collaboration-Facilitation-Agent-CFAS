@@ -16,7 +16,6 @@ from flask import current_app
 from flask import render_template
 from flask_socketio import emit, join_room
 
-from src.api.v1.model.nandor import Trade, Goals
 
 PLAYER_ID_MAP_RESULTS = OrderedDict([(1, 'Alpha'),
                                      (2, 'Bravo'),
@@ -147,13 +146,10 @@ def results():
     sess = current_app.config['sess']
 
     if sess.get('gameid') is not None:
-    # if True:
+
         try:
             game_id = sess.get('gameid').get('gameid')
             selected_template = sess.get('gameid').get('sel_player_template')
-            # game_id = 'ndZA_ZM'
-            # game_id = 'bBpSfaM'
-            # selected_template = 2
 
             content['game_id'] = game_id
             content['select_template'] = selected_template
@@ -162,37 +158,19 @@ def results():
             all_trade_moves = nandor.Trade.query.filter_by(game_id=game_id)
 
             not_null_trade_moves = len([x for x in all_trade_moves if x.dst_player is not None])
-            # TODO replace this game id with the game id in session
-
-            # # return a list of all rows in Goals table with game id = game
-            # all_goals = nandor.Goals.query.filter_by(game_id=game)
-
-            # priorities = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=0).order_by(Goals.time.desc()).first()
+            
             priorities = nandor.db.engine.execute(
                 f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 0 order by time DESC limit 1;").fetchone()
-            print(f'Priority = {priorities}\n')
-            print(f'Type = {type(priorities)}\t {str(type(priorities))}\n')
-            # print(f'ID = {priorities.id}\tTYpe = {type(priorities.id)}\n')
-            # print(f'GAme_ID = {priorities.game_id}\tTYpe = {type(priorities.game_id)}\n')
-            # print(f'time = {priorities.time}\tTYpe = {type(priorities.time)}\n')
-            # print(f'src_player = {priorities.src_player}\tTYpe = {type(priorities.src_player)}\n')
-            # print(f'src_player_uid = {priorities.src_player_uid}\tTYpe = {type(priorities.src_player_uid)}\n')
-            # print(f'Goal = {priorities.goal}\tTYpe = {type(priorities.goal)}\n')
-
-            # destinations = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=1).order_by(
-            #     Goals.time.desc()).first()
+            
             destinations = nandor.db.engine.execute(
                 f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 1 order by time DESC limit 1;").fetchone()
-            # truck = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=2).order_by(
-            #     Goals.time.desc()).first()
+            
             truck = nandor.db.engine.execute(
                 f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 2 order by time DESC limit 1;").fetchone()
-            # route = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=3).order_by(
-            #     Goals.time.desc()).first()
+            
             route = nandor.db.engine.execute(
                 f"SELECT * FROM exp.goals where game_id = '{game_id}' AND SRC_PLAYER = 3 order by time DESC limit 1;").fetchone()
-            # for k,v in priorities.items():
-            #     print(f'{k} --> {v}')
+            
             if type(priorities) == type(None):
                 return render_template('beautiful_results.html',
                                        error='There was no selected priority, please complete the game or start a new '
