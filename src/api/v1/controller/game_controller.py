@@ -158,7 +158,7 @@ def results():
             all_trade_moves = nandor.Trade.query.filter_by(game_id=game_id)
 
             not_null_trade_moves = len([x for x in all_trade_moves if x.dst_player is not None])
-            
+
             priorities = nandor.db.engine.execute(
                 f"SELECT goal FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 0 order by time DESC limit 1;").fetchone()
 
@@ -170,21 +170,21 @@ def results():
 
             route = nandor.db.engine.execute(
                 f"SELECT goal FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 3 order by time DESC limit 1;").fetchone()
-            
+
             if type(priorities) == type(None):
                 return render_template('beautiful_results.html',
                                        error='There was no selected priority, please complete the game or start a new '
                                              'one',
                                        title='Results - Error')
 
-            actual_priorities_list = priorities.goal[2:-2].split('", "')
+            actual_priorities_list = priorities.goal.replace('["', '').replace('"]', '').replace('", "', ' ').replace("Distribution ", "").split(" ")
 
             if type(destinations) == type(None):
                 return render_template('beautiful_results.html',
                                        error='There was no selected priority, please complete the game or start a new '
                                              'one',
                                        title='Results - Error')
-            actual_destinations = destinations.goal[2:-2].split('", "')
+            actual_destinations = destinations.goal.replace('["', '').replace('"]', '').replace('", "', ' ').split(" ")
             actual_destinations_dict = OrderedDict(
                 [
                     (DESTINATION_ID_MAP_RESULTS.get(1), PLAYER_ID_MAP_RESULTS.get(int(actual_destinations[0]))),
@@ -199,7 +199,7 @@ def results():
                                        error='There was no selected truck, please complete the game or start a new '
                                              'one',
                                        title='Results - Error')
-            actual_trucks = truck.goal[2:-2].split('", "')
+            actual_trucks = truck.goal.replace('["', '').replace('"]', '').replace('", "', ' ').split(" ")
             actual_trucks_dict = OrderedDict(
                 [
                     (1, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[0]))),
@@ -213,7 +213,7 @@ def results():
                                        error='There was no selected route, please complete the game or start a new '
                                              'one',
                                        title='Results - Error')
-            actual_route = route.goal[2:-2].split('", "')
+            actual_route = route.goal.replace('["', '').replace('"]', '').replace('", "', ' ').split(" ")
             actual_route_dict = OrderedDict(
                 [
                     (PLAYER_ID_MAP_RESULTS.get(1), int(actual_route[0])),
