@@ -160,16 +160,16 @@ def results():
             not_null_trade_moves = len([x for x in all_trade_moves if x.dst_player is not None])
             
             priorities = nandor.db.engine.execute(
-                f"SELECT * FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 0 order by time DESC limit 1;").fetchone()
-            
+                f"SELECT goal FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 0 order by time DESC limit 1;").fetchone()
+
             destinations = nandor.db.engine.execute(
-                f"SELECT * FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 1 order by time DESC limit 1;").fetchone()
-            
+                f"SELECT goal FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 1 order by time DESC limit 1;").fetchone()
+
             truck = nandor.db.engine.execute(
-                f"SELECT * FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 2 order by time DESC limit 1;").fetchone()
-            
+                f"SELECT goal FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 2 order by time DESC limit 1;").fetchone()
+
             route = nandor.db.engine.execute(
-                f"SELECT * FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 3 order by time DESC limit 1;").fetchone()
+                f"SELECT goal FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 3 order by time DESC limit 1;").fetchone()
             
             if type(priorities) == type(None):
                 return render_template('beautiful_results.html',
