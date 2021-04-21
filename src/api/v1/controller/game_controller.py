@@ -1,5 +1,6 @@
 import copy
 import json
+import os
 import pprint
 import secrets
 import sys
@@ -139,15 +140,24 @@ def init_game():
     return render_template('app.html', player_template_json=player_template_json, gameid=None,
                            sess=None, view='gamesetup', is_admin=None)
 
+
 @app.route('/results', methods = ['GET']) # results
 def results():
-    sess = current_app.config['sess'] #session from browser
-    if sess.get('gameid') is not None: # if session is not null
-        game_id = sess.get('gameid').get('gameid') # fetch game id
-        return redirect(url_for('results_with_game_id', game_id=game_id)) #get the results for this game id
-    else:
+    try:
+        sess = current_app.config['sess'] #session from browser
+        if sess.get('gameid') is not None: # if session is not null
+            game_id = sess.get('gameid').get('gameid') # fetch game id
+            return redirect(url_for('results_with_game_id', game_id=game_id)) #get the results for this game id
+        else:
+            return render_template('beautiful_results.html',
+                                   error='No game in seesion - Please start a new game',
+                                   title='Results - Error')
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        file_name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        error = {'class': exc_type, 'file': file_name, 'line': exc_tb.tb_lineno, 'message': e}
         return render_template('beautiful_results.html',
-                               error='No game in seesion - Please start a new game',
+                               error=error,
                                title='Results - Error')
 
 
