@@ -10,8 +10,13 @@
 
 </head>
 <body>
-{% if error %}
-<h4 class="p-3 mb-2 bg-danger  text-white">{{error}}</h4>
+{% if error is mapping %}
+<h5 class="p-3 mb-2 bg-danger  text-white">{{error.get('class')}}</h5>
+<h5 class="p-3 mb-2 bg-danger  text-white">{{error.get('file')}}</h5>
+<h5 class="p-3 mb-2 bg-danger  text-white">{{error.get('line')}}</h5>
+<h5 class="p-3 mb-2 bg-danger  text-white">{{error.get('message')}}</h5>
+{% elif error is string %}
+<h5 class="p-3 mb-2 bg-danger  text-white">{{error}}</h5>
 {% else %}
 <div class="container">
 
@@ -31,7 +36,7 @@
                         <li>{{k}}</li>
                         <ul>
                             {% for k,v in v.items() %}
-                            <li>{{k}} &emsp;-----------> {{v}}</li>
+                            <li>{{v}} &emsp;-----------> {{k}}</li>
                             {% endfor %}
                         </ul>
                     {% elif v is iterable %}
@@ -55,7 +60,7 @@
                         <li>{{k}}</li>
                         <ul>
                             {% for k,v in v.items() %}
-                            <li>{{k}} &emsp;-----------> {{v}}</li>
+                            <li>{{v}} &emsp;-----------> {{k}}</li>
                             {% endfor %}
                         </ul>
                     {% elif v is iterable %}
@@ -80,13 +85,12 @@
     <h4>moves_score = {{content.get('moves_score')}}</h4>
 
     {% if color == 'success' %}
-    <h4 class="p-3 mb-2 bg-success text-white">average_score = {{ content.get('average_score') }} %</h4>
+    <h4 class="p-3 mb-2 bg-success text-white">average_score = {{content.get('average_score')}}%</h4>
     {% elif color == 'warning' %}
-    <h4 class="p-3 mb-2 bg-warning text-white">average_score = {{ content.get('average_score') }} %</h4>
-    {% else %}
-    <h4 class="p-3 mb-2 bg-danger text-white">average_score = {{ content.get('average_score') }} %</h4>
+    <h4 class="p-3 mb-2 bg-warning text-white">average_score = {{content.get('average_score')}}%</h4>
+    {% elif color == 'danger' %}
+    <h4 class="p-3 mb-2 bg-danger text-white">average_score = {{content.get('average_score')}}%</h4>
     {% endif %}
-
 </div>
 {% endif %}
 
