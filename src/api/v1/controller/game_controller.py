@@ -13,7 +13,7 @@ import config
 import pytz
 from api.v1.model import nandor
 from config import app, socketio
-from flask import render_template
+from flask import render_template, request
 from flask_socketio import emit, join_room
 from flask import current_app, redirect, url_for
 
@@ -141,238 +141,246 @@ def init_game():
                            sess=None, view='gamesetup', is_admin=None)
 
 
-@app.route('/results', methods = ['GET']) # results
-def results():
+# @app.route('/results', methods=['GET'])  # results
+# def results():
+#     try:
+#         return render_template('input_game_id.html', title='Results')
+#         # sess = current_app.config['sess'] #session from browser
+#         # if sess.get('gameid') is not None: # if session is not null
+#         #     game_id = sess.get('gameid').get('gameid') # fetch game id
+#         #     return redirect(url_for('results_with_game_id', game_id=game_id)) #get the results for this game id
+#         # else:
+#         #     return render_template('beautiful_results.html',
+#         #                            error='No game in seesion - Please start a new game',
+#         #                            title='Results - Error')
+#     except Exception as e:
+#         exc_type, exc_obj, exc_tb = sys.exc_info()
+#         file_name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+#         error = {'class': exc_type, 'file': file_name, 'line': exc_tb.tb_lineno, 'message': e}
+#         return render_template('beautiful_results.html',
+#                                error=error,
+#                                title='Results - Error')
+
+
+@app.route('/results', methods=['POST','GET'])
+def results_with_game_id():
     try:
-        sess = current_app.config['sess'] #session from browser
-        if sess.get('gameid') is not None: # if session is not null
-            game_id = sess.get('gameid').get('gameid') # fetch game id
-            return redirect(url_for('results_with_game_id', game_id=game_id)) #get the results for this game id
+        if request.method == 'GET':
+            return render_template('input_game_id.html', title='Results')
+        elif request.method == 'POST':
+            game_id = request.form.get('game_id')
+            sess = current_app.config['sess']
+            pp = pprint.PrettyPrinter(indent=4).pprint
+            content = OrderedDict()
+            try:
+                selected_template = nandor.db.engine.execute(f"SELECT template_id as tid FROM exp.lobby where game_id = '{game_id}' limit 1").fetchone().items()[0][1]
+
+            except Exception as error:
+                raise Exception('Selected Template Not Found ==> ' + str(error))
+            # selected_template = 2
+            content['game_id'] = game_id
+            content['select_template'] = selected_template
+
+            # return a list of trades with game id = game | from nandor.py read Class Trade for info
+            try:
+                all_trade_moves = nandor.Trade.query.filter_by(game_id=game_id)
+                not_null_trade_moves = len([x for x in all_trade_moves if x.dst_player is not None])
+                if not_null_trade_moves == 0:
+                    raise Exception(
+                        f'\nThere are no minimum moves played by the player - Number of actual moves = {not_null_trade_moves} ')
+            except Exception as error:
+                raise Exception('\nFailed to fetch trade moves from the trade table  ==> ' + str(error))
+
+            priorities = nandor.db.engine.execute(
+                f"SELECT goal FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 0 order by time DESC limit 1;").fetchone()
+
+            if type(priorities) == type(None):
+                raise Exception('There was no selected priority, please complete the game or start a new one')
+
+            destinations = nandor.db.engine.execute(
+                f"SELECT goal FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 1 order by time DESC limit 1;").fetchone()
+
+            if type(destinations) == type(None):
+                raise Exception('There was no selected destination, please complete the game or start a new one')
+
+            truck = nandor.db.engine.execute(
+                f"SELECT goal FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 2 order by time DESC limit 1;").fetchone()
+
+            if type(truck) == type(None):
+                raise Exception('There was no selected truck, please complete the game or start a new one')
+
+            route = nandor.db.engine.execute(
+                f"SELECT goal FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 3 order by time DESC limit 1;").fetchone()
+
+            if type(route) == type(None):
+                raise Exception('There was no selected route, please complete the game or start a new one')
+
+            try:
+                actual_priorities_list = priorities.goal.replace('["', '').replace('"]', '').replace('", "', ' ').replace(
+                    "Distribution ", "").split(" ")
+                # actual_priorities_list = [int(x) for x in actual_priorities_list]
+            #     [ '1', '2', '3', '4' ] [1,2,3,4]
+            except Exception as error:
+                raise Exception('Failed to convert priority to list values ==> ' + str(error))
+
+            try:
+                actual_destinations = destinations.goal.replace('["', '').replace('"]', '').replace('", "', ' ').split(" ")
+            except Exception as error:
+                raise Exception('Failed to convert destinations to list values ==> ' + str(error))
+
+            try:
+                actual_destinations_dict = OrderedDict(
+                    [
+                        (DESTINATION_ID_MAP_RESULTS.get(1), PLAYER_ID_MAP_RESULTS.get(int(actual_destinations[0]))),
+                        (DESTINATION_ID_MAP_RESULTS.get(2), PLAYER_ID_MAP_RESULTS.get(int(actual_destinations[1]))),
+                        (DESTINATION_ID_MAP_RESULTS.get(3), PLAYER_ID_MAP_RESULTS.get(int(actual_destinations[2]))),
+                        (DESTINATION_ID_MAP_RESULTS.get(4), PLAYER_ID_MAP_RESULTS.get(int(actual_destinations[3])))
+                    ]
+                )
+            except Exception as error:
+                raise Exception('Failed to created the actual destinations dictionary ==> ' + str(error))
+
+            try:
+                actual_trucks = truck.goal.replace('["', '').replace('"]', '').replace('", "', ' ').split(" ")
+            except Exception as error:
+                raise Exception('Failed to convert trucks to list values ==> ' + str(error))
+
+            try:
+                actual_trucks_dict = OrderedDict(
+                    [
+                        (1, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[0]))),
+                        (2, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[1]))),
+                        (3, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[2]))),
+                        (4, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[3])))
+                    ]
+                )
+            except Exception as error:
+                raise Exception('Failed to created the actual trucks dictionary ==> ' + str(error))
+
+            try:
+                actual_route = route.goal.replace('["', '').replace('"]', '').replace('", "', ' ').split(" ")
+            except Exception as error:
+                raise Exception('Failed to convert route to list values ==> ' + str(error))
+
+            try:
+                actual_route_dict = OrderedDict(
+                    [
+                        (PLAYER_ID_MAP_RESULTS.get(1), int(actual_route[0])),
+                        (PLAYER_ID_MAP_RESULTS.get(2), int(actual_route[1])),
+                        (PLAYER_ID_MAP_RESULTS.get(3), int(actual_route[2])),
+                        (PLAYER_ID_MAP_RESULTS.get(4), int(actual_route[3]))
+                    ])
+            except Exception as error:
+                raise Exception('Failed to created the actual route  dictionary ==> ' + str(error))
+            try:
+                actuals = OrderedDict(
+                    [
+                        ('priority', actual_priorities_list),
+                        ('destination', actual_destinations_dict),
+                        ('trucks', actual_trucks_dict),
+                        ('routes', actual_route_dict),
+                        ('num-of-moves', not_null_trade_moves)
+                    ]
+                )
+
+            except Exception as error:
+                raise Exception('Failed to created the final actuals dictionary ==> ' + str(error))
+
+            try:
+                ideal = 2
+                if selected_template == 2:
+                    ideal = IDEAL['mission-1']
+                elif selected_template == 3:
+                    ideal = IDEAL['mission-2']
+
+            except Exception as error:
+                raise Exception('Failed to fetch the Ideal mission steps ==> ' + str(error))
+
+            content['actual_values'] = actuals
+            content['ideal_values'] = ideal
+
+            try:
+                list_a = actuals.get('priority')
+                list_b = ideal.get('priority')
+                priority_levenshtein = 10 - laven_dist(list_a, list_b)
+
+            except Exception as error:
+                raise Exception('Failed to calculate levenshtein distance for priority ==> ' + str(error))
+
+            try:
+                destination_levenshtein = 10 - laven_dist([x for x in actuals.get('destination').values()],
+                                                      [x for x in ideal.get('destination').values()])
+            except Exception as error:
+                raise Exception('Failed to calculate levenshtein distance for destinations ==> ' + str(error))
+            try:
+                trucks_levenshtein = 10 - laven_dist([x for x in actuals.get('trucks').values()],
+                                                 [x for x in ideal.get('trucks').values()])
+            except Exception as error:
+                raise Exception('Failed to calculate levenshtein distance for trucks ==> ' + str(error))
+
+            try:
+                actual_route_values = [x for x in actuals.get('routes').values()]
+                ideal_route_values = [x for x in ideal.get('routes').values()]
+                route_score = 0
+                for i in actual_route_values:
+                    if i == ideal_route_values[0]:
+                        route_score += 2.5
+            except Exception as error:
+                raise Exception('Failed to calculate the route score ==> ' + str(error))
+
+            try:
+                im = ideal.get("num-of-moves")
+                am = actuals.get("num-of-moves")
+
+                if am < im:
+                    move_score = (am/im) * 10
+                else:
+                    move_score = (im/am) * 10
+
+                # print(im, am, move_score)
+                move_score = round(move_score, 1)
+            except Exception as error:
+                raise Exception('Failed to calculate the move score ==> ' + str(error))
+
+            try:
+                average_score = (
+                                        (priority_levenshtein +
+                                         destination_levenshtein +
+                                         trucks_levenshtein +
+                                         route_score +
+                                         move_score) / 50) * 100
+                average_score = round(average_score, 1)
+            except Exception as error:
+                raise Exception('Failed to calculate the move score ==> ' + str(error))
+
+            content['priority_score'] = priority_levenshtein
+            content['destination_score'] = destination_levenshtein
+            content['truck_score'] = trucks_levenshtein
+            content['route_score'] = route_score
+            content['moves_score'] = move_score
+            content['average_score'] = average_score
+
+            color = ''
+            if average_score >= 70:
+                color = 'success'
+                sess['score_range'] = 'High'
+            elif 50 < average_score < 70:
+                color = 'warning'
+                sess['score_range'] = 'Medium'
+            else:
+                color = 'danger'
+                sess['score_range'] = 'Low'
+
+            pp(content)
+            return render_template('beautiful_results.html', content=content, title='Results', color=color)
         else:
-            return render_template('beautiful_results.html',
-                                   error='No game in seesion - Please start a new game',
-                                   title='Results - Error')
+            return redirect('results')
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         file_name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         error = {'class': exc_type, 'file': file_name, 'line': exc_tb.tb_lineno, 'message': e}
         return render_template('beautiful_results.html',
                                error=error,
-                               title='Results - Error')
-
-
-@app.route('/results/<game_id>', methods=['GET'])
-def results_with_game_id(game_id):
-    sess = current_app.config['sess']
-    pp = pprint.PrettyPrinter(indent=4).pprint
-    content = OrderedDict()
-
-    try:
-
-        try:
-            selected_template = nandor.db.engine.execute(f"SELECT template_id as tid FROM exp.lobby where game_id = '{game_id}' limit 1").fetchone().items()[0][1]
-        except Exception as error:
-            raise Exception('Selected Template Not Found ==> ' + str(error))
-
-        content['game_id'] = game_id
-        content['select_template'] = selected_template
-
-        # return a list of trades with game id = game | from nandor.py read Class Trade for info
-        try:
-            all_trade_moves = nandor.Trade.query.filter_by(game_id=game_id)
-            not_null_trade_moves = len([x for x in all_trade_moves if x.dst_player is not None])
-            if not_null_trade_moves == 0:
-                raise Exception(
-                    f'\nThere are no minimum moves played by the player - Number of actual moves = {not_null_trade_moves} ')
-        except Exception as error:
-            raise Exception('\nFailed to fetch trade moves from the trade table  ==> ' + str(error))
-
-        priorities = nandor.db.engine.execute(
-            f"SELECT goal FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 0 order by time DESC limit 1;").fetchone()
-
-        if type(priorities) == type(None):
-            raise Exception('There was no selected priority, please complete the game or start a new one')
-
-        destinations = nandor.db.engine.execute(
-            f"SELECT goal FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 1 order by time DESC limit 1;").fetchone()
-
-        if type(destinations) == type(None):
-            raise Exception('There was no selected destination, please complete the game or start a new one')
-
-        truck = nandor.db.engine.execute(
-            f"SELECT goal FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 2 order by time DESC limit 1;").fetchone()
-
-        if type(truck) == type(None):
-            raise Exception('There was no selected truck, please complete the game or start a new one')
-
-        route = nandor.db.engine.execute(
-            f"SELECT goal FROM EXP.goals where game_id = '{game_id}' AND SRC_PLAYER = 3 order by time DESC limit 1;").fetchone()
-
-        if type(route) == type(None):
-            raise Exception('There was no selected route, please complete the game or start a new one')
-
-        try:
-            actual_priorities_list = priorities.goal.replace('["', '').replace('"]', '').replace('", "', ' ').replace(
-                "Distribution ", "").split(" ")
-            # actual_priorities_list = [int(x) for x in actual_priorities_list]
-        #     [ '1', '2', '3', '4' ] [1,2,3,4]
-        except Exception as error:
-            raise Exception('Failed to convert priority to list values ==> ' + str(error))
-
-        try:
-            actual_destinations = destinations.goal.replace('["', '').replace('"]', '').replace('", "', ' ').split(" ")
-        except Exception as error:
-            raise Exception('Failed to convert destinations to list values ==> ' + str(error))
-
-        try:
-            actual_destinations_dict = OrderedDict(
-                [
-                    (DESTINATION_ID_MAP_RESULTS.get(1), PLAYER_ID_MAP_RESULTS.get(int(actual_destinations[0]))),
-                    (DESTINATION_ID_MAP_RESULTS.get(2), PLAYER_ID_MAP_RESULTS.get(int(actual_destinations[1]))),
-                    (DESTINATION_ID_MAP_RESULTS.get(3), PLAYER_ID_MAP_RESULTS.get(int(actual_destinations[2]))),
-                    (DESTINATION_ID_MAP_RESULTS.get(4), PLAYER_ID_MAP_RESULTS.get(int(actual_destinations[3])))
-                ]
-            )
-        except Exception as error:
-            raise Exception('Failed to created the actual destinations dictionary ==> ' + str(error))
-
-        try:
-            actual_trucks = truck.goal.replace('["', '').replace('"]', '').replace('", "', ' ').split(" ")
-        except Exception as error:
-            raise Exception('Failed to convert trucks to list values ==> ' + str(error))
-
-        try:
-            actual_trucks_dict = OrderedDict(
-                [
-                    (1, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[0]))),
-                    (2, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[1]))),
-                    (3, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[2]))),
-                    (4, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[3])))
-                ]
-            )
-        except Exception as error:
-            raise Exception('Failed to created the actual trucks dictionary ==> ' + str(error))
-
-        try:
-            actual_route = route.goal.replace('["', '').replace('"]', '').replace('", "', ' ').split(" ")
-        except Exception as error:
-            raise Exception('Failed to convert route to list values ==> ' + str(error))
-
-        try:
-            actual_route_dict = OrderedDict(
-                [
-                    (PLAYER_ID_MAP_RESULTS.get(1), int(actual_route[0])),
-                    (PLAYER_ID_MAP_RESULTS.get(2), int(actual_route[1])),
-                    (PLAYER_ID_MAP_RESULTS.get(3), int(actual_route[2])),
-                    (PLAYER_ID_MAP_RESULTS.get(4), int(actual_route[3]))
-                ])
-        except Exception as error:
-            raise Exception('Failed to created the actual route  dictionary ==> ' + str(error))
-        try:
-            actuals = OrderedDict(
-                [
-                    ('priority', actual_priorities_list),
-                    ('destination', actual_destinations_dict),
-                    ('trucks', actual_trucks_dict),
-                    ('routes', actual_route_dict),
-                    ('num-of-moves', not_null_trade_moves)
-                ]
-            )
-
-        except Exception as error:
-            raise Exception('Failed to created the final actuals dictionary ==> ' + str(error))
-
-        try:
-            ideal = 2
-            if selected_template == 2:
-                ideal = IDEAL['mission-1']
-            elif selected_template == 3:
-                ideal = IDEAL['mission-2']
-
-        except Exception as error:
-            raise Exception('Failed to fetch the Ideal mission steps ==> ' + str(error))
-
-        content['actual_values'] = actuals
-        content['ideal_values'] = ideal
-
-        try:
-            list_a = actuals.get('priority')
-            list_b = ideal.get('priority')
-            priority_levenshtein = 10 - laven_dist(list_a, list_b)
-
-        except Exception as error:
-            raise Exception('Failed to calculate levenshtein distance for priority ==> ' + str(error))
-
-        try:
-            destination_levenshtein = 10 - laven_dist([x for x in actuals.get('destination').values()],
-                                                  [x for x in ideal.get('destination').values()])
-        except Exception as error:
-            raise Exception('Failed to calculate levenshtein distance for destinations ==> ' + str(error))
-        try:
-            trucks_levenshtein = 10 - laven_dist([x for x in actuals.get('trucks').values()],
-                                             [x for x in ideal.get('trucks').values()])
-        except Exception as error:
-            raise Exception('Failed to calculate levenshtein distance for trucks ==> ' + str(error))
-
-        try:
-            actual_route_values = [x for x in actuals.get('routes').values()]
-            ideal_route_values = [x for x in ideal.get('routes').values()]
-            # pp(actual_route_values)
-            # pp(type(actual_route_values[0]))
-            # pp(ideal_route_values)
-            # pp(type(ideal_route_values[0]))
-            route_score = 0
-            for i in actual_route_values:
-                if i == ideal_route_values[0]:
-                    route_score += 2.5
-            # pp(route_score)
-        except Exception as error:
-            raise Exception('Failed to calculate the route score ==> ' + str(error))
-
-        try:
-            move_score = (ideal.get("num-of-moves") / actuals.get("num-of-moves")) * 10
-            move_score = round(move_score, 1)
-        except Exception as error:
-            raise Exception('Failed to calculate the move score ==> ' + str(error))
-
-
-
-        try:
-            average_score = (
-                                    (priority_levenshtein +
-                                     destination_levenshtein +
-                                     trucks_levenshtein +
-                                     route_score +
-                                     move_score) / 50) * 100
-            average_score = round(average_score, 1)
-        except Exception as error:
-            raise Exception('Failed to calculate the move score ==> ' + str(error))
-
-        content['priority_score'] = priority_levenshtein
-        content['destination_score'] = destination_levenshtein
-        content['truck_score'] = trucks_levenshtein
-        content['route_score'] = route_score
-        content['moves_score'] = move_score
-        content['average_score'] = average_score
-
-        color = ''
-        if average_score >= 70:
-            color = 'success'
-            sess['score_range'] = 'High'
-        elif 50 < average_score < 70:
-            color = 'warning'
-            sess['score_range'] = 'Medium'
-        else:
-            color = 'danger'
-            sess['score_range'] = 'Low'
-
-        # pp(content)
-        return render_template('beautiful_results.html', content=content, title='Results', color=color)
-    except Exception as e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        file_name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        error = {'class': exc_type, 'file': file_name, 'line': exc_tb.tb_lineno, 'message': e}
-        return render_template('beautiful_results.html', error=error,
                                title='Results - Error')
 
 

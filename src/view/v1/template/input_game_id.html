@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}{{title}}{% endblock %}
+
+{% block content %}
+
+<form action="/results" enctype="multipart/form-data" method="post">
+    <p>Game Id - <input type = "text" name = "game_id" /></p>
+    <p><input type = "submit" value = "Submit" /></p>
+</form>
+
+{% endblock %}
