@@ -173,7 +173,7 @@ def results_with_game_id():
             pp = pprint.PrettyPrinter(indent=4).pprint
             content = OrderedDict()
             try:
-                selected_template = nandor.db.engine.execute(f"SELECT template_id as tid FROM exp.lobby where game_id = '{game_id}' limit 1").fetchone().items()[0][1]
+                selected_template = nandor.db.engine.execute(f"SELECT template_id as tid FROM EXP.lobby where game_id = '{game_id}' limit 1").fetchone().items()[0][1]
 
             except Exception as error:
                 raise Exception('Selected Template Not Found ==> ' + str(error))
