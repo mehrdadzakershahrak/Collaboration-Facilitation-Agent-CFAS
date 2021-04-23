@@ -141,28 +141,7 @@ def init_game():
                            sess=None, view='gamesetup', is_admin=None)
 
 
-# @app.route('/results', methods=['GET'])  # results
-# def results():
-#     try:
-#         return render_template('input_game_id.html', title='Results')
-#         # sess = current_app.config['sess'] #session from browser
-#         # if sess.get('gameid') is not None: # if session is not null
-#         #     game_id = sess.get('gameid').get('gameid') # fetch game id
-#         #     return redirect(url_for('results_with_game_id', game_id=game_id)) #get the results for this game id
-#         # else:
-#         #     return render_template('beautiful_results.html',
-#         #                            error='No game in seesion - Please start a new game',
-#         #                            title='Results - Error')
-#     except Exception as e:
-#         exc_type, exc_obj, exc_tb = sys.exc_info()
-#         file_name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-#         error = {'class': exc_type, 'file': file_name, 'line': exc_tb.tb_lineno, 'message': e}
-#         return render_template('beautiful_results.html',
-#                                error=error,
-#                                title='Results - Error')
-
-
-@app.route('/results', methods=['POST','GET'])
+@app.route('/results', methods=['POST', 'GET'])
 def results_with_game_id():
     try:
         if request.method == 'GET':
@@ -178,6 +157,7 @@ def results_with_game_id():
             except Exception as error:
                 raise Exception('Selected Template Not Found ==> ' + str(error))
             # selected_template = 2
+
             content['game_id'] = game_id
             content['select_template'] = selected_template
 
@@ -287,11 +267,13 @@ def results_with_game_id():
                 raise Exception('Failed to created the final actuals dictionary ==> ' + str(error))
 
             try:
-                ideal = 2
+                ideal = {}
                 if selected_template == 2:
                     ideal = IDEAL['mission-1']
                 elif selected_template == 3:
                     ideal = IDEAL['mission-2']
+                else:
+                    ideal = IDEAL['mission-1']
 
             except Exception as error:
                 raise Exception('Failed to fetch the Ideal mission steps ==> ' + str(error))
@@ -379,6 +361,7 @@ def results_with_game_id():
         exc_type, exc_obj, exc_tb = sys.exc_info()
         file_name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         error = {'class': exc_type, 'file': file_name, 'line': exc_tb.tb_lineno, 'message': e}
+        pp(error)
         return render_template('beautiful_results.html',
                                error=error,
                                title='Results - Error')
@@ -423,6 +406,7 @@ def num_teams_collected():
     return render_template('quick-query.html', lobby_cnt=lobby_cnt.fetchone()[0])
 
 
+# user propose --> socket.emit --> socket.on(catch here {do funciton})
 @socketio.on('join-game')
 def join_game(data):
     if 'gameid' in data:
