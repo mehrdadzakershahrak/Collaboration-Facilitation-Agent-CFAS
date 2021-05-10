@@ -17,6 +17,7 @@ from flask import render_template, request
 from flask_socketio import emit, join_room
 from flask import current_app, redirect, url_for
 
+pp = pprint.PrettyPrinter(indent=4).pprint
 
 PLAYER_ID_MAP_RESULTS = OrderedDict([(1, 'Alpha'),
                                      (2, 'Bravo'),
@@ -31,7 +32,7 @@ DESTINATION_ID_MAP_RESULTS = OrderedDict([(1, 'Shelter'),
 
 IDEAL = {
     'mission-1': OrderedDict(
-        [('priority', ['Bridge', 'Hospital', 'Distribution Center', 'Shelter']),
+        [('priority', ['Bridge', 'Hospital', 'Center', 'Shelter']),
          ('destination', OrderedDict(
              [(DESTINATION_ID_MAP_RESULTS.get(1), PLAYER_ID_MAP_RESULTS.get(4)),
               (DESTINATION_ID_MAP_RESULTS.get(2), PLAYER_ID_MAP_RESULTS.get(3)),
@@ -53,7 +54,7 @@ IDEAL = {
          ('num-of-moves', 6)]
     ),
     'mission-2': OrderedDict([
-        ('priority', ['Bridge', 'Shelter', 'Distribution Center', 'Hospital']),
+        ('priority', ['Bridge', 'Shelter', 'Center', 'Hospital']),
         ('destination', OrderedDict(
             [(DESTINATION_ID_MAP_RESULTS.get(1), PLAYER_ID_MAP_RESULTS.get(2)),
              (DESTINATION_ID_MAP_RESULTS.get(2), PLAYER_ID_MAP_RESULTS.get(1)),
@@ -75,40 +76,6 @@ IDEAL = {
         ('num-of-moves', 10)
     ])
 }
-
-
-def laven_dist(list1, list2):
-    m = len(list1)
-    n = len(list2)
-    dp = [[0 for x in range(n + 1)] for x in range(m + 1)]
-
-    # Fill d[][] in bottom up manner
-    for i in range(m + 1):
-        for j in range(n + 1):
-
-            # If first string is empty, only option is to
-            # insert all characters of second string
-            if i == 0:
-                dp[i][j] = j  # Min. operations = j
-
-            # If second string is empty, only option is to
-            # remove all characters of second string
-            elif j == 0:
-                dp[i][j] = i  # Min. operations = i
-
-            # If last characters are same, ignore last char
-            # and recur for remaining string
-            elif list1[i - 1] == list2[j - 1]:
-                dp[i][j] = dp[i - 1][j - 1]
-
-                # If last character are different, consider all
-            # possibilities and find minimum
-            else:
-                dp[i][j] = 1 + min(dp[i][j - 1],  # Insert
-                                   dp[i - 1][j],  # Remove
-                                   dp[i - 1][j - 1])  # Replace
-
-    return dp[m][n]
 
 
 PLAYER_ID_MAP = {
@@ -141,6 +108,56 @@ def init_game():
                            sess=None, view='gamesetup', is_admin=None)
 
 
+def get_score(list_a, list_b) -> int:
+    score = 0
+    print(list_a, list_b)
+    for (x, y) in zip(list_a, list_b):
+        if x == y:
+            score += 2.5
+    return score
+
+
+def calculate_score(actuals, ideal) -> tuple:
+
+    # priority score
+    list_actuals_priority = actuals.get('priority')
+    list_ideals_priority = ideal.get('priority')
+
+    priority_score = get_score(list_actuals_priority, list_ideals_priority)
+
+    # destination score
+    list_actuals_destination = [x for x in actuals.get('destination').values()]
+    list_ideals_destination = [x for x in ideal.get('destination').values()]
+
+    destination_score = get_score(list_actuals_destination, list_ideals_destination)
+
+    # truck score
+    list_actuals_trucks = [x for x in actuals.get('trucks').values()]
+    list_ideals_trucks = [x for x in ideal.get('trucks').values()]
+
+    truck_score = get_score(list_actuals_trucks, list_ideals_trucks)
+
+    # route score
+    list_actual_route = [x for x in actuals.get('routes').values()]
+    list_ideal_route = [x for x in ideal.get('routes').values()]
+
+    route_score = get_score(list_actual_route, list_ideal_route)
+
+    # move score
+    im = ideal.get("num-of-moves")
+    am = actuals.get("num-of-moves")
+
+    if am < im:
+        move_score = round((am/im) * 10,1)
+    else:
+        move_score = round((im/am) * 10,1)
+
+    # average score
+    avg_score = (priority_score + destination_score + truck_score + route_score + move_score) * 2
+
+    return priority_score, destination_score, truck_score, route_score, move_score, avg_score
+
+
 @app.route('/results', methods=['POST', 'GET'])
 def results_with_game_id():
     try:
@@ -149,7 +166,6 @@ def results_with_game_id():
         elif request.method == 'POST':
             game_id = request.form.get('game_id')
             sess = current_app.config['sess']
-            pp = pprint.PrettyPrinter(indent=4).pprint
             content = OrderedDict()
             try:
                 selected_template = nandor.db.engine.execute(f"SELECT template_id as tid FROM EXP.lobby where game_id = '{game_id}' limit 1").fetchone().items()[0][1]
@@ -266,94 +282,38 @@ def results_with_game_id():
             except Exception as error:
                 raise Exception('Failed to created the final actuals dictionary ==> ' + str(error))
 
+            ideal = {}
             try:
-                ideal = {}
-                if selected_template == 2:
-                    ideal = IDEAL['mission-1']
-                elif selected_template == 3:
+                if selected_template == 3:
                     ideal = IDEAL['mission-2']
                 else:
                     ideal = IDEAL['mission-1']
-
             except Exception as error:
                 raise Exception('Failed to fetch the Ideal mission steps ==> ' + str(error))
 
             content['actual_values'] = actuals
             content['ideal_values'] = ideal
+            p_score, d_score, t_score, r_score, m_score, avg_score = calculate_score(content.get('actual_values'), content.get('ideal_values'))
 
-            try:
-                list_a = actuals.get('priority')
-                list_b = ideal.get('priority')
-                priority_levenshtein = 10 - laven_dist(list_a, list_b)
-
-            except Exception as error:
-                raise Exception('Failed to calculate levenshtein distance for priority ==> ' + str(error))
-
-            try:
-                destination_levenshtein = 10 - laven_dist([x for x in actuals.get('destination').values()],
-                                                      [x for x in ideal.get('destination').values()])
-            except Exception as error:
-                raise Exception('Failed to calculate levenshtein distance for destinations ==> ' + str(error))
-            try:
-                trucks_levenshtein = 10 - laven_dist([x for x in actuals.get('trucks').values()],
-                                                 [x for x in ideal.get('trucks').values()])
-            except Exception as error:
-                raise Exception('Failed to calculate levenshtein distance for trucks ==> ' + str(error))
-
-            try:
-                actual_route_values = [x for x in actuals.get('routes').values()]
-                ideal_route_values = [x for x in ideal.get('routes').values()]
-                route_score = 0
-                for i in actual_route_values:
-                    if i == ideal_route_values[0]:
-                        route_score += 2.5
-            except Exception as error:
-                raise Exception('Failed to calculate the route score ==> ' + str(error))
-
-            try:
-                im = ideal.get("num-of-moves")
-                am = actuals.get("num-of-moves")
-
-                if am < im:
-                    move_score = (am/im) * 10
-                else:
-                    move_score = (im/am) * 10
-
-                # print(im, am, move_score)
-                move_score = round(move_score, 1)
-            except Exception as error:
-                raise Exception('Failed to calculate the move score ==> ' + str(error))
-
-            try:
-                average_score = (
-                                        (priority_levenshtein +
-                                         destination_levenshtein +
-                                         trucks_levenshtein +
-                                         route_score +
-                                         move_score) / 50) * 100
-                average_score = round(average_score, 1)
-            except Exception as error:
-                raise Exception('Failed to calculate the move score ==> ' + str(error))
-
-            content['priority_score'] = priority_levenshtein
-            content['destination_score'] = destination_levenshtein
-            content['truck_score'] = trucks_levenshtein
-            content['route_score'] = route_score
-            content['moves_score'] = move_score
-            content['average_score'] = average_score
+            content['priority_score'] = p_score
+            content['destination_score'] = d_score
+            content['truck_score'] = t_score
+            content['route_score'] = r_score
+            content['moves_score'] = m_score
+            content['average_score'] = avg_score
 
             color = ''
-            if average_score >= 70:
+            if avg_score >= 70:
                 color = 'success'
                 sess['score_range'] = 'High'
-            elif 50 < average_score < 70:
+            elif 50 < avg_score < 70:
                 color = 'warning'
                 sess['score_range'] = 'Medium'
             else:
                 color = 'danger'
                 sess['score_range'] = 'Low'
 
-            pp(content)
+            # pp(content)
             return render_template('beautiful_results.html', content=content, title='Results', color=color)
         else:
             return redirect('results')
