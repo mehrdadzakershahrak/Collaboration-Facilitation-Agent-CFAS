@@ -24,6 +24,11 @@ PLAYER_ID_MAP_RESULTS = OrderedDict([(1, 'Alpha'),
                                      (3, 'Charlie'),
                                      (4, 'Delta')])
 
+ROUTE_MAP = OrderedDict([('Alpha', 1),
+                         ('Bravo', 2),
+                         ('Charlie', 3),
+                         ('Delta', 4)])
+
 DESTINATION_ID_MAP_RESULTS = OrderedDict([(1, 'Shelter'),
                                           (2, 'Center'),
                                           (3, 'Hospital'),
@@ -77,7 +82,6 @@ IDEAL = {
     ])
 }
 
-
 PLAYER_ID_MAP = {
     'A': 0,
     'B': 1,
@@ -108,17 +112,27 @@ def init_game():
                            sess=None, view='gamesetup', is_admin=None)
 
 
-def get_score(list_a, list_b) -> int:
-    score = 0
-    print(list_a, list_b)
-    for (x, y) in zip(list_a, list_b):
-        if x == y:
-            score += 2.5
-    return score
+def get_score(list_a: list, list_b: list) -> int:
+    try:
+        score = 0
+        # print(list_a, list_b)
+        for (x, y) in zip(list_a, list_b):
+            if x == y:
+                score += 2.5
+        return score
+    except Exception as error:
+        raise Exception(f'Error in Get Score - {type(list_a)}, {type(list_b)}')
+
+
+def get_move_score(am: int, im: int) -> float:
+    if am < im:
+        move_score = round((am / im) * 10, 1)
+    else:
+        move_score = round((im / am) * 10, 1)
+    return move_score
 
 
 def calculate_score(actuals, ideal) -> tuple:
-
     # priority score
     list_actuals_priority = actuals.get('priority')
     list_ideals_priority = ideal.get('priority')
@@ -146,16 +160,17 @@ def calculate_score(actuals, ideal) -> tuple:
     # move score
     im = ideal.get("num-of-moves")
     am = actuals.get("num-of-moves")
+    move_score = get_move_score(am, im)
+    avg_score = get_average_score(priority_score, destination_score, truck_score, route_score, move_score)
+    return priority_score, destination_score, truck_score, route_score, move_score, avg_score
 
-    if am < im:
-        move_score = round((am/im) * 10,1)
-    else:
-        move_score = round((im/am) * 10,1)
 
+def get_average_score(priority_score: float, destination_score: float, truck_score: float, route_score: float,
+                      move_score: float) -> float:
     # average score
     avg_score = (priority_score + destination_score + truck_score + route_score + move_score) * 2
-
-    return priority_score, destination_score, truck_score, route_score, move_score, avg_score
+    # sum /50 * 100
+    return avg_score
 
 
 @app.route('/results', methods=['POST', 'GET'])
@@ -168,7 +183,9 @@ def results_with_game_id():
             sess = current_app.config['sess']
             content = OrderedDict()
             try:
-                selected_template = nandor.db.engine.execute(f"SELECT template_id as tid FROM EXP.lobby where game_id = '{game_id}' limit 1").fetchone().items()[0][1]
+                selected_template = nandor.db.engine.execute(
+                    f"SELECT template_id as tid FROM EXP.lobby where game_id = '{game_id}' limit 1").fetchone().items()[
+                    0][1]
 
             except Exception as error:
                 raise Exception('Selected Template Not Found ==> ' + str(error))
@@ -212,7 +229,8 @@ def results_with_game_id():
                 raise Exception('There was no selected route, please complete the game or start a new one')
 
             try:
-                actual_priorities_list = priorities.goal.replace('["', '').replace('"]', '').replace('", "', ' ').replace(
+                actual_priorities_list = priorities.goal.replace('["', '').replace('"]', '').replace('", "',
+                                                                                                     ' ').replace(
                     "Distribution ", "").split(" ")
                 # actual_priorities_list = [int(x) for x in actual_priorities_list]
             #     [ '1', '2', '3', '4' ] [1,2,3,4]
@@ -220,7 +238,8 @@ def results_with_game_id():
                 raise Exception('Failed to convert priority to list values ==> ' + str(error))
 
             try:
-                actual_destinations = destinations.goal.replace('["', '').replace('"]', '').replace('", "', ' ').split(" ")
+                actual_destinations = destinations.goal.replace('["', '').replace('"]', '').replace('", "', ' ').split(
+                    " ")
             except Exception as error:
                 raise Exception('Failed to convert destinations to list values ==> ' + str(error))
 
@@ -293,7 +312,8 @@ def results_with_game_id():
 
             content['actual_values'] = actuals
             content['ideal_values'] = ideal
-            p_score, d_score, t_score, r_score, m_score, avg_score = calculate_score(content.get('actual_values'), content.get('ideal_values'))
+            p_score, d_score, t_score, r_score, m_score, avg_score = calculate_score(content.get('actual_values'),
+                                                                                     content.get('ideal_values'))
 
             content['priority_score'] = p_score
             content['destination_score'] = d_score
@@ -325,6 +345,200 @@ def results_with_game_id():
         return render_template('beautiful_results.html',
                                error=error,
                                title='Results - Error')
+
+
+Decision_mapping = {0: "Priority", 1: "Destination", 2: "Truck", 3: "Route"}
+
+
+def rewards_json(num_of_moves: int, src_player_id: str, src_player_name: str, action_goal: str,
+                 priority: str, destination: str, trucks: str, routes: list,
+                 p_score: float, d_score: float, t_score: float, r_score: float, m_score: float,
+                 avg_score: float) -> dict:
+    dictionary = {
+        'num_of_moves': num_of_moves,
+        'src_player_id': src_player_id,
+        'src_player_name': src_player_name,
+        'Goal': action_goal,
+        'priority': priority,
+        'destination': destination,
+        'trucks': trucks,
+        'routes': routes,
+        'p_score': p_score,
+        'd_score': d_score,
+        't_score': t_score,
+        'r_score': r_score,
+        'm_score': m_score,
+        'avg_score': avg_score
+    }
+    return dictionary
+
+
+@app.route('/rewards', methods=['GET', 'POST'])
+def fetch_goals():
+    try:
+        #     if user visits the page for the first time display form page to ask user input of game id
+        if request.method == 'GET':
+            return render_template('input_game_id.html', title='Rewards')
+
+        #     if a form is submitted then go to post to do the data processing
+        elif request.method == 'POST':
+
+            # INITIALIZING VARIABLES & VALUES
+            table_results = []
+
+            game_id = request.form.get('game_id')  # game_id = 'ndZA_ZM'
+            selected_template = nandor.Lobby.query.filter_by(game_id=game_id).first_or_404().to_dict().get('template_id')  # 3 # direct int value
+            # Equivalent to ==> (select top 1 template_id from lobby where game_id=game_id)
+
+            ideal = {}
+            ideal = IDEAL['mission-2'] if selected_template == 3 else IDEAL['mission-1']
+            # if template = 3 choose mission 2 else for all others choose mission 1 template
+
+            # GOALS TABLE SECTION
+
+            # initializing the table values
+            previous_row = rewards_json(num_of_moves=-1, src_player_id='-1', src_player_name='NA',
+                                        action_goal='initialize',
+                                        priority='0000', destination='0000',
+                                        trucks='0000', routes=[0, 0, 0, 0],
+                                        p_score=0, d_score=0, t_score=0, r_score=0, m_score=0, avg_score=0)
+
+            table_results.append(previous_row)
+            # print(previous_row)
+
+            goals = nandor.Goals.query.filter_by(game_id=game_id).order_by(nandor.Goals.time).all()
+            # list of all rows for the current game from the goals table
+            # Equivalent to ==> select * from goals where game_id=game_id order by time
+
+            all_trade_count = nandor.Trade.query.filter_by(game_id=game_id).filter(nandor.Trade.dst_player != None).count()
+            trade_count = 0
+
+            p_score, d_score, t_score, r_score, m_score = 0, 0, 0, 0, 0
+            avg_score, priority, destination, trucks, routes = 0, 0, 0, 0, 0
+
+            for goal in goals:
+                results = goal.rewards()
+                trade_count = nandor.Trade.query.filter_by(game_id=game_id).filter(nandor.Trade.dst_player != None).filter(nandor.Trade.time < results.get('time')).count()
+
+                p_score = previous_row.get('p_score')
+                d_score = previous_row.get('d_score')
+                t_score = previous_row.get('t_score')
+                r_score = previous_row.get('r_score')
+                m_score = get_move_score(trade_count, ideal.get('num-of-moves'))
+                # print(m_score)
+                avg_score = previous_row.get('avg_score')
+                priority = previous_row.get('priority')
+                destination = previous_row.get('destination')
+                trucks = previous_row.get('trucks')
+                routes = previous_row.get('routes')
+
+                if results.get('src_player_id') == 0:
+                    p_score = get_score(results.get('goal'), ideal.get('priority'))
+                    priority = results.get('goal')
+                elif results.get('src_player_id') == 1:
+                    d_score = get_score(results.get('goal'), [x for x in ideal.get('destination').values()])
+                    destination = results.get('goal')
+                elif results.get('src_player_id') == 2:
+                    t_score = get_score(results.get('goal'), [x for x in ideal.get('trucks').values()])
+                    trucks = results.get('goal')
+                elif results.get('src_player_id') == 3:
+                    # print(results.get('goal'))
+                    routes = [ROUTE_MAP.get(x) for x in results.get('goal')]
+                    # print(routes)
+                    results['goal'] = routes
+                    r_score = get_score(routes, [x for x in ideal.get('routes').values()])
+
+                avg_score = get_average_score(p_score, d_score, t_score, r_score, m_score)
+
+                previous_row = rewards_json(num_of_moves=trade_count,
+                                            src_player_id=Decision_mapping.get(results.get('src_player_id')),
+                                            src_player_name=results.get('src_player_name'),
+                                            action_goal="-".join([str(x)[0] for x in results.get('goal')]),
+                                            priority="".join([x[0] for x in priority]),
+                                            destination="".join([x[0] for x in destination]),
+                                            trucks="".join([x[0] for x in trucks]),
+                                            routes=routes,
+                                            p_score=p_score, d_score=d_score, t_score=t_score, r_score=r_score, m_score=m_score,
+                                            avg_score=avg_score)
+
+                table_results.append(previous_row)
+                # print(previous_row)
+            if all_trade_count > trade_count:
+                m_score = get_move_score(all_trade_count, ideal.get('num-of-moves'))
+                avg_score = get_average_score(p_score, d_score, t_score, r_score, m_score)
+                previous_row = rewards_json(num_of_moves=all_trade_count, src_player_id="Final trades",
+                                            src_player_name=results.get('src_player_name'),
+                                            action_goal="Final trades",
+                                            priority="".join([x[0] for x in priority]),
+                                            destination="".join([x[0] for x in destination]),
+                                            trucks="".join([x[0] for x in trucks]),
+                                            routes=routes,
+                                            p_score=p_score, d_score=d_score, t_score=t_score, r_score=r_score, m_score=m_score,
+                                            avg_score=avg_score)
+
+                table_results.append(previous_row)
+
+
+            # # TRADES TABLE SECTION
+            #
+            # player_a_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='A').first().player_resource_values()
+            # player_b_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='B').first().player_resource_values()
+            # player_c_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='C').first().player_resource_values()
+            # player_d_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='D').first().player_resource_values()
+            #
+            # player_resource = {
+            #     0: player_a_resource,
+            #     1: player_b_resource,
+            #     2: player_c_resource,
+            #     3: player_d_resource
+            # }
+            #
+            # print(player_a_resource)
+            # # print(player_b_resource)
+            # # print(player_c_resource)
+            # # print(player_d_resource)
+            # #
+            # dest_shelter_resource   = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='Shelter').first().destination_resource_values()
+            # dest_bridge_resource    = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='Bridge').first().destination_resource_values()
+            # dest_hospital_resource  = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='Hospital').first().destination_resource_values()
+            # dest_center_resource    = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='Distribution Center').first().destination_resource_values()
+            #
+            # dest_resource = {
+            #     0: dest_shelter_resource,
+            #     1: dest_center_resource,
+            #     2: dest_hospital_resource,
+            #     3: dest_bridge_resource
+            # }
+            #
+            # print(dest_shelter_resource)
+            # # print(dest_bridge_resource)
+            # # print(dest_hospital_resource)
+            # # print(dest_center_resource)
+            #
+            # print()
+            # table_trades = []
+            # trades_all = nandor.Trade.query.filter_by(game_id=game_id).order_by(nandor.Trade.time).filter(nandor.Trade.dst_player != None).all()
+            # for trade in trades_all:
+            #     # print(trade.to_dict())
+            #     #  fetch the current priority assignment
+            #     trade = trade.rewards()
+            #     print(f"{trade.get('src_player')}\t{trade.get('dst_player')}\t{trade.get('offered_amount')}\t{trade.get('offered_resource').rjust(8)}\t")
+            #     print(f"{PLAYER_ID_MAP_RESULTS.get(trade.get('src_player')+1)}\t->\t{PLAYER_ID_MAP_RESULTS.get(trade.get('dst_player')+1)}\t{trade.get('offered_amount')}\t{trade.get('offered_resource').rjust(8)}\t"
+            #           f"|\n{trade.get('dst_player')} has = {player_resource.get(trade.get('dst_player'))}  \n\n")
+            #     # subtract
+            #     # add
+
+            return render_template('beautiful_rewards.html', table_results=table_results, ideals=ideal)
+        else:
+            return redirect('fetch_goals')
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        file_name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        error = {'class': exc_type, 'file': file_name, 'line': exc_tb.tb_lineno, 'message': e}
+        pp(error)
+        return render_template('beautiful_rewards.html',
+                               error=error,
+                               title='Fetch - Error')
 
 
 @app.route('/game/<gameid>', methods=['GET'])

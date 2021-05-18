@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}{{title}}{% endblock %}
+
+{% block content %}
+{% if error is mapping %}
+<h5 class="p-3 mb-2 bg-danger  text-white">{{error.get('class')}}</h5>
+<h5 class="p-3 mb-2 bg-danger  text-white">{{error.get('file')}}</h5>
+<h5 class="p-3 mb-2 bg-danger  text-white">{{error.get('line')}}</h5>
+<h5 class="p-3 mb-2 bg-danger  text-white">{{error.get('message')}}</h5>
+{% elif error is string %}
+<h5 class="p-3 mb-2 bg-danger  text-white">{{error}}</h5>
+{% else %}
+
+  <table class="table table-striped table-sm table-sm table-bordered table-hover" style="white-space: nowrap">
+      <thead>
+        <tr>
+<!--          <th scope="col">Step</th>-->
+          <th scope="col">Decision</th>
+          <th scope="col">Action</th>
+          <th scope="col"># moves (M)</th>
+          <th scope="col">Priority (P)</th>
+          <th scope="col">Destination (D)</th>
+          <th scope="col">Trucks (T)</th>
+          <th scope="col">Route (R)</th>
+          <th scope="col">P Score</th>
+          <th scope="col">D Score</th>
+          <th scope="col">T Score</th>
+          <th scope="col">R Score</th>
+          <th scope="col">M Score</th>
+          <th scope="col">Average Score %</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in table_results %}
+        <tr>
+<!--          <td>{{row.get('step_count')}}</td>-->
+          <td>{{row.get('src_player_id')}}</td>
+          <td>{{row.get('Goal')}}</td>
+          <td>{{row.get('num_of_moves')}}</td>
+          <td>{{row.get('priority')}}</td>
+          <td>{{row.get('destination')}}</td>
+          <td>{{row.get('trucks')}}</td>
+          <td>{{row.get('routes')}}</td>
+          <td>{{row.get('p_score')}}</td>
+          <td>{{row.get('d_score')}}</td>
+          <td>{{row.get('t_score')}}</td>
+          <td>{{row.get('r_score')}}</td>
+          <td>{{row.get('m_score')}}</td>
+          <td>{{row.get('avg_score')}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+  </table>
+{% endif %}
+{% endblock %}

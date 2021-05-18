@@ -1,9 +1,21 @@
+from collections import OrderedDict
+
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.dialects import mysql
 import config
 
 db = SQLAlchemy(config.app)
 
+
+PLAYER_ID_MAP_RESULTS = OrderedDict([(0, 'Alpha'),
+                                     (1, 'Bravo'),
+                                     (2, 'Charlie'),
+                                     (3, 'Delta')])
+
+GOAL_ID_MAP_RESULTS = OrderedDict([(1, 'Alpha'),
+                                     (2, 'Bravo'),
+                                     (3, 'Charlie'),
+                                     (4, 'Delta')])
 
 class Lobby(db.Model):
     __tablename__ = 'lobby'
@@ -66,6 +78,30 @@ class PlayerTemplate(db.Model):
             route_orders=self.route_orders
         )
 
+    def player_resource_values(self):
+        return dict(
+            food=self.food,
+            water=self.water,
+            medicine=self.medicine,
+            supply=self.supply,
+            name=self.name,
+        )
+
+    def destination_resource_values(self):
+        return dict(
+            food=self.food,
+            water=self.water,
+            medicine=self.medicine,
+            supply=self.supply,
+            name=self.name,
+            dest_need=self.dest_need,
+            food_range=self.food_range,
+            water_range=self.water_range,
+            medicine_range=self.medicine_range,
+            supply_range=self.supply_range,
+            route_orders=self.route_orders
+        )
+
 
 class Goals(db.Model):
     __tablename__ = 'goals'
@@ -86,6 +122,28 @@ class Goals(db.Model):
             src_player_uid=self.src_player_uid,
             goal=self.goal
         )
+
+    def rewards(self):
+        if self.src_player == 0:
+            g = self.goal.replace('["', '').replace('"]', '').replace('", "', ' ').replace("Distribution ", "").split(" ")
+            g = [x for x in g]
+        else:
+            g = self.goal.replace('["', '').replace('"]', '').replace('", "', ' ').split(" ")
+            g = list(map(int, g))
+            g = [GOAL_ID_MAP_RESULTS.get(x) for x in g]
+        return dict(
+            id=self.id,
+            src_player_id = self.src_player,
+            src_player_name=PLAYER_ID_MAP_RESULTS.get(self.src_player),
+            time=self.time,
+            # src_player=self.src_player,
+            goal=g
+        )
+
+    def route(self):
+        g = self.goal.replace('["', '').replace('"]', '').replace('", "', ' ').split(" ")
+        g = list(map(int, g))
+        return g
 
 
 class Trade(db.Model):
@@ -109,6 +167,15 @@ class Trade(db.Model):
             src_player_uid=self.src_player_uid,
             dst_player=self.dst_player,
             dst_player_uid=self.dst_player_uid,
+            offered_resource=self.offered_resource,
+            offered_amount=self.offered_amount
+        )
+
+    def rewards(self):
+        return dict(
+            id=self.id,
+            src_player=self.src_player,
+            dst_player=self.dst_player,
             offered_resource=self.offered_resource,
             offered_amount=self.offered_amount
         )

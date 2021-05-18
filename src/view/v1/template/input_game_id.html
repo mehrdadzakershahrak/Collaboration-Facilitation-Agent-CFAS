@@ -3,12 +3,22 @@
 {% block title %}{{title}}{% endblock %}
 
 {% block content %}
+{% if title == 'Results' %}
 
-<div class="">
-    <form action="/results" enctype="multipart/form-data" method="post">
-        <p>Game Id - <input class="form-rounded" type = "text" name = "game_id" placeholder="Enter Game Id"/></p>
-        <p><input class="btn btn-success" type = "submit" value = "Submit" /></p>
-    </form>
-</div>
+    <div class="">
+        <form action="/results" enctype="multipart/form-data" method="post">
+            <p>Game Id - <input class="form-rounded" type = "text" name = "game_id" placeholder="Enter Game Id"/></p>
+            <p><input class="btn btn-success" type = "submit" value = "Submit" /></p>
+        </form>
+    </div>
+
+{% elif title == 'Rewards' %}
+    <div class="">
+        <form action="/rewards" enctype="multipart/form-data" method="post">
+            <p>Game Id - <input class="form-rounded" type = "text" name = "game_id" placeholder="Enter Game Id"/></p>
+            <p><input class="btn btn-success" type = "submit" value = "Submit" /></p>
+        </form>
+    </div>
+{% endif %}
 
 {% endblock %}
