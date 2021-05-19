@@ -187,6 +187,7 @@ def results_with_game_id():
                     f"SELECT template_id as tid FROM EXP.lobby where game_id = '{game_id}' limit 1").fetchone().items()[
                     0][1]
 
+
             except Exception as error:
                 raise Exception('Selected Template Not Found ==> ' + str(error))
             # selected_template = 2
@@ -347,14 +348,14 @@ def results_with_game_id():
                                title='Results - Error')
 
 
-Decision_mapping = {0: "Priority", 1: "Destination", 2: "Truck", 3: "Route"}
+Decision_mapping = {0: "Priority", 1: "Dest\n(Sh-Ce-Ho-Br)", 2: "Truck", 3: "Route"}
 
 
-def rewards_json(num_of_moves: int, src_player_id: str, src_player_name: str, action_goal: str,
-                 priority: str, destination: str, trucks: str, routes: list,
-                 p_score: float, d_score: float, t_score: float, r_score: float, m_score: float,
-                 avg_score: float) -> dict:
-    dictionary = {
+def rewards_goals_json(num_of_moves: int, src_player_id: str, src_player_name: str, action_goal: str,
+                       priority: str, destination: str, trucks: str, routes: list,
+                       p_score: float, d_score: float, t_score: float, r_score: float, m_score: float,
+                       avg_score: float) -> dict:
+    return {
         'num_of_moves': num_of_moves,
         'src_player_id': src_player_id,
         'src_player_name': src_player_name,
@@ -370,7 +371,50 @@ def rewards_json(num_of_moves: int, src_player_id: str, src_player_name: str, ac
         'm_score': m_score,
         'avg_score': avg_score
     }
-    return dictionary
+
+
+def rewards_trades_json(src_player_name, dst_player_name, offered_resource, offered_amount,
+                        src_food, src_water, src_medicine, src_supply,
+                        dst_food, dst_water, dst_medicine, dst_supply,
+                        dst_loc_name, dst_loc_food, dst_loc_water, dst_loc_medicine, dst_loc_supply):
+    return {'src_player_name': src_player_name,
+            'dst_player_name': dst_player_name,
+            'offered_resource': offered_resource,
+            'offered_amount':offered_amount,
+            'src_food': src_food,
+            'src_water': src_water,
+            'src_medicine': src_medicine,
+            'src_supply': src_supply,
+            'dst_food': dst_food,
+            'dst_water': dst_water,
+            'dst_medicine': dst_medicine,
+            'dst_supply': dst_supply,
+            'dst_loc_name':dst_loc_name,
+            'dst_loc_food': dst_loc_food,
+            'dst_loc_water': dst_loc_water,
+            'dst_loc_medicine': dst_loc_medicine,
+            'dst_loc_supply': dst_loc_supply,
+            }
+
+
+def blank_rewards(table_trades):
+
+    row = rewards_trades_json(src_player_name='',
+                              dst_player_name='',
+                              offered_resource='',
+                              offered_amount='',
+                              src_food='',
+                              src_water='',
+                              src_medicine='',
+                              src_supply='----',
+                              dst_food='',
+                              dst_water='',
+                              dst_medicine='',
+                              dst_supply='',
+                              dst_loc_name='', dst_loc_food='', dst_loc_water='', dst_loc_medicine='',
+                              dst_loc_supply='')
+    table_trades.append(row)
+    return table_trades
 
 
 @app.route('/rewards', methods=['GET', 'POST'])
@@ -397,11 +441,11 @@ def fetch_goals():
             # GOALS TABLE SECTION
 
             # initializing the table values
-            previous_row = rewards_json(num_of_moves=-1, src_player_id='-1', src_player_name='NA',
-                                        action_goal='initialize',
-                                        priority='0000', destination='0000',
-                                        trucks='0000', routes=[0, 0, 0, 0],
-                                        p_score=0, d_score=0, t_score=0, r_score=0, m_score=0, avg_score=0)
+            previous_row = rewards_goals_json(num_of_moves=-1, src_player_id='-1', src_player_name='NA',
+                                              action_goal='initialize',
+                                              priority='0000', destination='0000',
+                                              trucks='0000', routes=[0, 0, 0, 0],
+                                              p_score=0, d_score=0, t_score=0, r_score=0, m_score=0, avg_score=0)
 
             table_results.append(previous_row)
             # print(previous_row)
@@ -450,85 +494,198 @@ def fetch_goals():
 
                 avg_score = get_average_score(p_score, d_score, t_score, r_score, m_score)
 
-                previous_row = rewards_json(num_of_moves=trade_count,
-                                            src_player_id=Decision_mapping.get(results.get('src_player_id')),
-                                            src_player_name=results.get('src_player_name'),
-                                            action_goal="-".join([str(x)[0] for x in results.get('goal')]),
-                                            priority="".join([x[0] for x in priority]),
-                                            destination="".join([x[0] for x in destination]),
-                                            trucks="".join([x[0] for x in trucks]),
-                                            routes=routes,
-                                            p_score=p_score, d_score=d_score, t_score=t_score, r_score=r_score, m_score=m_score,
-                                            avg_score=avg_score)
+                previous_row = rewards_goals_json(num_of_moves=trade_count,
+                                                  src_player_id=Decision_mapping.get(results.get('src_player_id')),
+                                                  src_player_name=results.get('src_player_name'),
+                                                  action_goal="-".join([str(x)[0] for x in results.get('goal')]),
+                                                  priority="".join([x[0] for x in priority]),
+                                                  destination="".join([x[0] for x in destination]),
+                                                  trucks="".join([x[0] for x in trucks]),
+                                                  routes=routes,
+                                                  p_score=p_score, d_score=d_score, t_score=t_score, r_score=r_score, m_score=m_score,
+                                                  avg_score=avg_score)
 
                 table_results.append(previous_row)
                 # print(previous_row)
             if all_trade_count > trade_count:
                 m_score = get_move_score(all_trade_count, ideal.get('num-of-moves'))
                 avg_score = get_average_score(p_score, d_score, t_score, r_score, m_score)
-                previous_row = rewards_json(num_of_moves=all_trade_count, src_player_id="Final trades",
-                                            src_player_name=results.get('src_player_name'),
-                                            action_goal="Final trades",
-                                            priority="".join([x[0] for x in priority]),
-                                            destination="".join([x[0] for x in destination]),
-                                            trucks="".join([x[0] for x in trucks]),
-                                            routes=routes,
-                                            p_score=p_score, d_score=d_score, t_score=t_score, r_score=r_score, m_score=m_score,
-                                            avg_score=avg_score)
+                previous_row = rewards_goals_json(num_of_moves=all_trade_count, src_player_id="Final trades",
+                                                  src_player_name=results.get('src_player_name'),
+                                                  action_goal="Final trades",
+                                                  priority="".join([x[0] for x in priority]),
+                                                  destination="".join([x[0] for x in destination]),
+                                                  trucks="".join([x[0] for x in trucks]),
+                                                  routes=routes,
+                                                  p_score=p_score, d_score=d_score, t_score=t_score, r_score=r_score, m_score=m_score,
+                                                  avg_score=avg_score)
 
                 table_results.append(previous_row)
 
 
-            # # TRADES TABLE SECTION
-            #
-            # player_a_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='A').first().player_resource_values()
-            # player_b_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='B').first().player_resource_values()
-            # player_c_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='C').first().player_resource_values()
-            # player_d_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='D').first().player_resource_values()
-            #
-            # player_resource = {
-            #     0: player_a_resource,
-            #     1: player_b_resource,
-            #     2: player_c_resource,
-            #     3: player_d_resource
-            # }
-            #
-            # print(player_a_resource)
-            # # print(player_b_resource)
-            # # print(player_c_resource)
-            # # print(player_d_resource)
-            # #
-            # dest_shelter_resource   = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='Shelter').first().destination_resource_values()
-            # dest_bridge_resource    = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='Bridge').first().destination_resource_values()
-            # dest_hospital_resource  = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='Hospital').first().destination_resource_values()
-            # dest_center_resource    = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='Distribution Center').first().destination_resource_values()
-            #
-            # dest_resource = {
-            #     0: dest_shelter_resource,
-            #     1: dest_center_resource,
-            #     2: dest_hospital_resource,
-            #     3: dest_bridge_resource
-            # }
-            #
-            # print(dest_shelter_resource)
-            # # print(dest_bridge_resource)
-            # # print(dest_hospital_resource)
-            # # print(dest_center_resource)
-            #
-            # print()
-            # table_trades = []
-            # trades_all = nandor.Trade.query.filter_by(game_id=game_id).order_by(nandor.Trade.time).filter(nandor.Trade.dst_player != None).all()
-            # for trade in trades_all:
-            #     # print(trade.to_dict())
-            #     #  fetch the current priority assignment
-            #     trade = trade.rewards()
-            #     print(f"{trade.get('src_player')}\t{trade.get('dst_player')}\t{trade.get('offered_amount')}\t{trade.get('offered_resource').rjust(8)}\t")
-            #     print(f"{PLAYER_ID_MAP_RESULTS.get(trade.get('src_player')+1)}\t->\t{PLAYER_ID_MAP_RESULTS.get(trade.get('dst_player')+1)}\t{trade.get('offered_amount')}\t{trade.get('offered_resource').rjust(8)}\t"
-            #           f"|\n{trade.get('dst_player')} has = {player_resource.get(trade.get('dst_player'))}  \n\n")
-            #     # subtract
-            #     # add
+            # TRADES TABLE SECTION
 
-            return render_template('beautiful_rewards.html', table_results=table_results, ideals=ideal)
+            #  initial resource at start of game
+            player_a_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='A').first().player_resource_values()
+            player_b_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='B').first().player_resource_values()
+            player_c_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='C').first().player_resource_values()
+            player_d_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='D').first().player_resource_values()
+
+            player_resource = {
+                0: player_a_resource,
+                1: player_b_resource,
+                2: player_c_resource,
+                3: player_d_resource
+            }
+
+            print(f'A = {player_a_resource}')
+            print(f'B = {player_b_resource}')
+            print(f'C = {player_c_resource}')
+            print(f'D = {player_d_resource}')
+
+            dest_shelter_resource   = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='Shelter').first().destination_resource_values()
+            dest_bridge_resource    = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='Bridge').first().destination_resource_values()
+            dest_hospital_resource  = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='Hospital').first().destination_resource_values()
+            dest_center_resource    = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='Distribution Center').first().destination_resource_values()
+
+            dest_resource = {
+                0: dest_shelter_resource,
+                1: dest_center_resource,
+                2: dest_hospital_resource,
+                3: dest_bridge_resource
+            }
+            print()
+            print(f'Shelter = {dest_shelter_resource}')
+            print(f'Bridge = {dest_bridge_resource}')
+            print(f'Hospital = {dest_hospital_resource}')
+            print(f'Center = {dest_center_resource}')
+
+            print()
+            table_trades = []
+            for i in range(4):
+                row = rewards_trades_json(src_player_name=PLAYER_ID_MAP_RESULTS.get(i+1),
+                                          dst_player_name='',
+                                          offered_resource='',
+                                          offered_amount='',
+                                          src_food=player_resource.get(i).get('food'),
+                                          src_water=player_resource.get(i).get('water'),
+                                          src_medicine=player_resource.get(i).get('medicine'),
+                                          src_supply=player_resource.get(i).get('supply'),
+                                          dst_food='',
+                                          dst_water='',
+                                          dst_medicine='',
+                                          dst_supply='',
+                                          dst_loc_name='', dst_loc_food='', dst_loc_water='', dst_loc_medicine='', dst_loc_supply='')
+                table_trades.append(row)
+
+            for i in range(4):
+                row = rewards_trades_json(src_player_name='',
+                                          dst_player_name=DESTINATION_ID_MAP_RESULTS.get(i+1),
+                                          offered_resource='',
+                                          offered_amount='',
+                                          src_food='',
+                                          src_water='',
+                                          src_medicine='',
+                                          src_supply='',
+                                          dst_food=dest_resource.get(i).get('food'),
+                                          dst_water=dest_resource.get(i).get('water'),
+                                          dst_medicine=dest_resource.get(i).get('medicine'),
+                                          dst_supply=dest_resource.get(i).get('supply'),
+                                          dst_loc_name='', dst_loc_food='', dst_loc_water='', dst_loc_medicine='', dst_loc_supply='')
+                table_trades.append(row)
+            table_trades = blank_rewards(table_trades)
+            table_trades = blank_rewards(table_trades)
+            trades_all = nandor.Trade.query.filter_by(game_id=game_id).order_by(nandor.Trade.time).filter(nandor.Trade.dst_player != None).all()
+            for trade in trades_all:
+                # print(trade.to_dict())
+                #  fetch the current priority assignment
+
+                trade = trade.rewards()
+                time_stamp = trade.get('time')
+
+                destination_sequence = nandor.Goals.query.filter_by(src_player=1).filter_by(game_id=game_id).filter(nandor.Goals.time < time_stamp).order_by(nandor.Goals.time.desc()).first().to_dict().get('goal')
+                print(destination_sequence)
+
+                src_dst_mapping = {}
+
+                src_player_id = trade.get('src_player')
+                src_player_name = PLAYER_ID_MAP_RESULTS.get(src_player_id + 1)
+
+                dst_player_id = trade.get('dst_player')
+                dst_player_name = PLAYER_ID_MAP_RESULTS.get(dst_player_id + 1)
+
+                t_amount = trade.get('offered_amount')
+                t_resource = trade.get('offered_resource')
+
+                # print(f"{src_player_name} --> {dst_player_name}\t{t_amount}\t{t_resource.rjust(8)}")
+
+                row = rewards_trades_json(src_player_name=src_player_name,
+                                          dst_player_name=dst_player_name,
+                                          offered_resource=t_resource,
+                                          offered_amount=t_amount,
+                                          src_food='',
+                                          src_water='',
+                                          src_medicine='',
+                                          src_supply='',
+                                          dst_food='',
+                                          dst_water='',
+                                          dst_medicine='',
+                                          dst_supply='',
+                                          dst_loc_name='', dst_loc_food='', dst_loc_water='', dst_loc_medicine='', dst_loc_supply='')
+
+                old_src_value = player_resource[src_player_id][t_resource]
+                old_dst_value = player_resource[dst_player_id][t_resource]
+
+                player_resource[src_player_id][t_resource] -= t_amount
+                player_resource[dst_player_id][t_resource] += t_amount
+
+                row['src_'+t_resource] = player_resource[src_player_id][t_resource]
+                row['dst_' + t_resource] = player_resource[dst_player_id][t_resource]
+
+                # dest_resource = {
+                #     0: dest_shelter_resource,
+                #     1: dest_center_resource,
+                #     2: dest_hospital_resource,
+                #     3: dest_bridge_resource
+                # }
+
+                print(dst_player_id+1, dst_player_name, destination_sequence)
+
+                destination_location_name = destination_sequence.index(dst_player_id+1)
+                print(f'{dst_player_name} will go to {destination_location_name} - {dest_resource.get(destination_location_name).get("name")} -  SCHB'
+                      f'{dest_resource.get(destination_location_name)}')
+
+                destination_location_resources = dest_resource.get(destination_location_name)
+                print(destination_location_resources)
+
+                row['dst_loc_name'] = destination_location_resources.get('name').replace("Distribution ","")
+                row['dst_loc_food'] = player_resource.get(dst_player_id).get('food') - destination_location_resources.get('food')
+                row['dst_loc_water'] = player_resource.get(dst_player_id).get('water') - destination_location_resources.get('water')
+                row['dst_loc_medicine'] = player_resource.get(dst_player_id).get('medicine') - destination_location_resources.get('medicine')
+                row['dst_loc_supply'] = player_resource.get(dst_player_id).get('supply') - destination_location_resources.get('supply')
+
+                table_trades.append(row)
+            table_trades = blank_rewards(table_trades)
+            table_trades = blank_rewards(table_trades)
+
+            for i in range(4):
+                player = PLAYER_ID_MAP_RESULTS.get(destination_sequence[i])
+                row = rewards_trades_json(src_player_name=f'{player}--->',
+                                          dst_player_name=DESTINATION_ID_MAP_RESULTS.get(i+1),
+                                          offered_resource='',
+                                          offered_amount='',
+                                          src_food=f'{player_resource.get(destination_sequence[i]-1).get("food")}',
+                                          src_water=f'{player_resource.get(destination_sequence[i]-1).get("water")}',
+                                          src_medicine=f'{player_resource.get(destination_sequence[i]-1).get("medicine")}',
+                                          src_supply=f'{player_resource.get(destination_sequence[i]-1).get("supply")}',
+                                          dst_food=dest_resource.get(i).get('food'),
+                                          dst_water=dest_resource.get(i).get('water'),
+                                          dst_medicine=dest_resource.get(i).get('medicine'),
+                                          dst_supply=dest_resource.get(i).get('supply'),
+                                          dst_loc_name='', dst_loc_food='', dst_loc_water='', dst_loc_medicine='', dst_loc_supply='')
+                table_trades.append(row)
+
+            return render_template('beautiful_rewards.html', table_results=table_results, ideals=ideal, table_trades=table_trades)
         else:
             return redirect('fetch_goals')
     except Exception as e:

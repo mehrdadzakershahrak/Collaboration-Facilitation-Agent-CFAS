@@ -11,16 +11,15 @@
 {% elif error is string %}
 <h5 class="p-3 mb-2 bg-danger  text-white">{{error}}</h5>
 {% else %}
-
-  <table class="table table-striped table-sm table-sm table-bordered table-hover" style="white-space: nowrap">
-      <thead>
+    <table class="table table-striped table-sm table-sm table-bordered table-hover table-fit" style="white-space: nowrap">
+      <thead class="table-dark">
         <tr>
 <!--          <th scope="col">Step</th>-->
           <th scope="col">Decision</th>
           <th scope="col">Action</th>
           <th scope="col"># moves (M)</th>
           <th scope="col">Priority (P)</th>
-          <th scope="col">Destination (D)</th>
+          <th scope="col">Destination (D) SCHB</th>
           <th scope="col">Trucks (T)</th>
           <th scope="col">Route (R)</th>
           <th scope="col">P Score</th>
@@ -50,6 +49,59 @@
           <td>{{row.get('avg_score')}}</td>
         </tr>
         {% endfor %}
+      </tbody>
+  </table>
+
+    <table class="table table-striped table-sm table-sm table-bordered table-hover table-fit" style="white-space: nowrap">
+        <thead class="table-dark">
+            <th scope="col" colspan="4" class="text-center">Trade</th>
+            <th scope="col" colspan="4" class="text-center">Source Player</th>
+            <th scope="col" colspan="4" class="text-center">Destination Player</th>
+            <th scope="col" colspan="5" class="text-center">Destination Location</th>
+        </thead>
+        <thead class="table-dark">
+            <tr>
+                <th scope="col">Src-Player</th>
+                <th scope="col">Dst-Player</th>
+                <th scope="col">Off. Resource</th>
+                <th scope="col">Off. Amount</th>
+                <th scope="col">Food</th>
+                <th scope="col">Water</th>
+                <th scope="col">Medicine</th>
+                <th scope="col">Supply</th>
+                <th scope="col">Food</th>
+                <th scope="col">Water</th>
+                <th scope="col">Medicine</th>
+                <th scope="col">Supply</th>
+                <th scope="col">Name</th>
+                <th scope="col">Food</th>
+                <th scope="col">Water</th>
+                <th scope="col">Medicine</th>
+                <th scope="col">Supply</th>
+            </tr>
+      </thead>
+      <tbody>
+            {% for row in table_trades %}
+            <tr>
+                <td>{{row.get('src_player_name')}}</td>
+                <td>{{row.get('dst_player_name')}}</td>
+                <td>{{row.get('offered_resource')}}</td>
+                <td>{{row.get('offered_amount')}}</td>
+                <td style="color:red">{{row.get('src_food')}}</td>
+                <td style="color:red">{{row.get('src_water')}}</td>
+                <td style="color:red">{{row.get('src_medicine')}}</td>
+                <td style="color:red">{{row.get('src_supply')}}</td>
+                <td style="color:green">{{row.get('dst_food')}}</td>
+                <td style="color:green">{{row.get('dst_water')}}</td>
+                <td style="color:green">{{row.get('dst_medicine')}}</td>
+                <td style="color:green">{{row.get('dst_supply')}}</td>
+                <td>{{row.get('dst_loc_name')}}</td>
+                <td>{{row.get('dst_loc_food')}}</td>
+                <td>{{row.get('dst_loc_water')}}</td>
+                <td>{{row.get('dst_loc_medicine')}}</td>
+                <td>{{row.get('dst_loc_supply')}}</td>
+            </tr>
+            {% endfor %}
       </tbody>
   </table>
 {% endif %}
