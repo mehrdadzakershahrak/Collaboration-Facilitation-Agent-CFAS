@@ -8,6 +8,7 @@ import time
 import traceback
 from collections import OrderedDict
 from datetime import datetime
+from difflib import SequenceMatcher
 
 import config
 import pytz
@@ -45,10 +46,10 @@ IDEAL = {
               (DESTINATION_ID_MAP_RESULTS.get(4), PLAYER_ID_MAP_RESULTS.get(1))]
          )),
          ('trucks', OrderedDict(
-             [(1, PLAYER_ID_MAP_RESULTS.get(1)),
-              (2, PLAYER_ID_MAP_RESULTS.get(2)),
-              (3, PLAYER_ID_MAP_RESULTS.get(3)),
-              (4, PLAYER_ID_MAP_RESULTS.get(4))]
+             [(1, 'Bridge'),
+              (2, 'Hospital'),
+              (3, 'Center'),
+              (4, 'Shelter')]
          )),
          ('routes', OrderedDict(
              [(PLAYER_ID_MAP_RESULTS.get(1), 4),
@@ -67,10 +68,10 @@ IDEAL = {
              (DESTINATION_ID_MAP_RESULTS.get(4), PLAYER_ID_MAP_RESULTS.get(3))]
         )),
         ('trucks', OrderedDict(
-            [(1, PLAYER_ID_MAP_RESULTS.get(1)),
-             (2, PLAYER_ID_MAP_RESULTS.get(2)),
-             (3, PLAYER_ID_MAP_RESULTS.get(4)),
-             (4, PLAYER_ID_MAP_RESULTS.get(3))]
+            [(1, 'Center'),
+             (2, 'Shelter'),
+             (3, 'Hospital'),
+             (4, 'Bridge')]
         )),
         ('routes', OrderedDict(
             [(PLAYER_ID_MAP_RESULTS.get(1), 3),
@@ -112,6 +113,26 @@ def init_game():
                            sess=None, view='gamesetup', is_admin=None)
 
 
+def get_sequence_matcher_score(list_a: list, list_b: list) -> int:
+    try:
+        score = 0
+        print(list_a, list_b)
+
+        list_a_string = ''
+        list_b_string = ''
+        for i in list_a:
+            list_a_string += i[0]
+
+        for i in list_b:
+            list_b_string += i[0]
+        print(list_a_string, list_b_string)
+        score = SequenceMatcher(None, list_a_string, list_b_string).ratio()*10
+        print(score)
+        return score
+    except Exception as error:
+        raise Exception(f'Error in Get Score - {type(list_a)}, {type(list_b)}')
+
+
 def get_score(list_a: list, list_b: list) -> int:
     try:
         score = 0
@@ -137,13 +158,21 @@ def calculate_score(actuals, ideal) -> tuple:
     list_actuals_priority = actuals.get('priority')
     list_ideals_priority = ideal.get('priority')
 
-    priority_score = get_score(list_actuals_priority, list_ideals_priority)
+    # to change back to the one to one score mapping comment and uncomment the function between getscore & getsequencematcher functions
+
+    priority_score = get_sequence_matcher_score(list_actuals_priority, list_ideals_priority) # sequence matcher function
+    # priority_score = get_score(list_actuals_priority, list_ideals_priority) # one to one mapping
 
     # destination score
     list_actuals_destination = [x for x in actuals.get('destination').values()]
     list_ideals_destination = [x for x in ideal.get('destination').values()]
 
-    destination_score = get_score(list_actuals_destination, list_ideals_destination)
+    # print(list_actuals_destination, list_ideals_destination)
+
+    destination_score = get_sequence_matcher_score(list_actuals_destination, list_ideals_destination) # sequence matcher function
+    # destination_score = get_score(list_actuals_destination, list_ideals_destination) # one to one mapping
+
+
 
     # truck score
     list_actuals_trucks = [x for x in actuals.get('trucks').values()]
@@ -262,12 +291,14 @@ def results_with_game_id():
                 raise Exception('Failed to convert trucks to list values ==> ' + str(error))
 
             try:
+                dest_keys = list(actual_destinations_dict.keys())
+                dest_vals = list(actual_destinations_dict.values())
                 actual_trucks_dict = OrderedDict(
                     [
-                        (1, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[0]))),
-                        (2, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[1]))),
-                        (3, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[2]))),
-                        (4, PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[3])))
+                        (1, dest_keys[dest_vals.index(PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[0])))]),
+                        (2, dest_keys[dest_vals.index(PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[1])))]),
+                        (3, dest_keys[dest_vals.index(PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[2])))]),
+                        (4, dest_keys[dest_vals.index(PLAYER_ID_MAP_RESULTS.get(int(actual_trucks[3])))])
                     ]
                 )
             except Exception as error:
