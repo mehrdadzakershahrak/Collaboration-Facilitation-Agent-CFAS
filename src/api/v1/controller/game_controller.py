@@ -508,10 +508,10 @@ def fetch_goals():
                 routes = previous_row.get('routes')
 
                 if results.get('src_player_id') == 0:
-                    p_score = get_score(results.get('goal'), ideal.get('priority'))
+                    p_score = get_sequence_matcher_score(results.get('goal'), ideal.get('priority'))
                     priority = results.get('goal')
                 elif results.get('src_player_id') == 1:
-                    d_score = get_score(results.get('goal'), [x for x in ideal.get('destination').values()])
+                    d_score = get_sequence_matcher_score(results.get('goal'), [x for x in ideal.get('destination').values()])
                     destination = results.get('goal')
                 elif results.get('src_player_id') == 2:
                     t_score = get_score(results.get('goal'), [x for x in ideal.get('trucks').values()])
