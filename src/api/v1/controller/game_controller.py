@@ -40,16 +40,16 @@ IDEAL = {
     'mission-1': OrderedDict(
         [('priority', ['Bridge', 'Hospital', 'Center', 'Shelter']),
          ('destination', OrderedDict(
-             [(DESTINATION_ID_MAP_RESULTS.get(1), PLAYER_ID_MAP_RESULTS.get(4)),
+             [(DESTINATION_ID_MAP_RESULTS.get(1), PLAYER_ID_MAP_RESULTS.get(1)),
               (DESTINATION_ID_MAP_RESULTS.get(2), PLAYER_ID_MAP_RESULTS.get(3)),
               (DESTINATION_ID_MAP_RESULTS.get(3), PLAYER_ID_MAP_RESULTS.get(2)),
-              (DESTINATION_ID_MAP_RESULTS.get(4), PLAYER_ID_MAP_RESULTS.get(1))]
+              (DESTINATION_ID_MAP_RESULTS.get(4), PLAYER_ID_MAP_RESULTS.get(4))]
          )),
          ('trucks', OrderedDict(
-             [(1, 'Bridge'),
-              (2, 'Hospital'),
-              (3, 'Center'),
-              (4, 'Shelter')]
+             [(1, 'Shelter'),
+              (2, 'Center'),
+              (3, 'Hospital'),
+              (4, 'Bridge')]
          )),
          ('routes', OrderedDict(
              [(PLAYER_ID_MAP_RESULTS.get(1), 4),
@@ -68,8 +68,8 @@ IDEAL = {
              (DESTINATION_ID_MAP_RESULTS.get(4), PLAYER_ID_MAP_RESULTS.get(3))]
         )),
         ('trucks', OrderedDict(
-            [(1, 'Center'),
-             (2, 'Shelter'),
+            [(1, 'Shelter'),
+             (2, 'Center'),
              (3, 'Hospital'),
              (4, 'Bridge')]
         )),
@@ -116,7 +116,7 @@ def init_game():
 def get_sequence_matcher_score(list_a: list, list_b: list) -> int:
     try:
         score = 0
-        print(list_a, list_b)
+        # print(list_a, list_b)
 
         list_a_string = ''
         list_b_string = ''
@@ -125,9 +125,9 @@ def get_sequence_matcher_score(list_a: list, list_b: list) -> int:
 
         for i in list_b:
             list_b_string += i[0]
-        print(list_a_string, list_b_string)
+        # print(list_a_string, list_b_string)
         score = SequenceMatcher(None, list_a_string, list_b_string).ratio()*10
-        print(score)
+        # print(score)
         return score
     except Exception as error:
         raise Exception(f'Error in Get Score - {type(list_a)}, {type(list_b)}')
@@ -171,8 +171,6 @@ def calculate_score(actuals, ideal) -> tuple:
 
     destination_score = get_sequence_matcher_score(list_actuals_destination, list_ideals_destination) # sequence matcher function
     # destination_score = get_score(list_actuals_destination, list_ideals_destination) # one to one mapping
-
-
 
     # truck score
     list_actuals_trucks = [x for x in actuals.get('trucks').values()]
@@ -593,6 +591,7 @@ def fetch_goals():
 
             print()
             table_trades = []
+
             for i in range(4):
                 row = rewards_trades_json(src_player_name=PLAYER_ID_MAP_RESULTS.get(i+1),
                                           dst_player_name='',
@@ -624,8 +623,10 @@ def fetch_goals():
                                           dst_supply=dest_resource.get(i).get('supply'),
                                           dst_loc_name='', dst_loc_food='', dst_loc_water='', dst_loc_medicine='', dst_loc_supply='')
                 table_trades.append(row)
+
             table_trades = blank_rewards(table_trades)
             table_trades = blank_rewards(table_trades)
+
             trades_all = nandor.Trade.query.filter_by(game_id=game_id).order_by(nandor.Trade.time).filter(nandor.Trade.dst_player != None).all()
             for trade in trades_all:
                 # print(trade.to_dict())
@@ -727,6 +728,7 @@ def fetch_goals():
         return render_template('beautiful_rewards.html',
                                error=error,
                                title='Fetch - Error')
+
 
 
 @app.route('/game/<gameid>', methods=['GET'])
