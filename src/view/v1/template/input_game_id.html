@@ -19,6 +19,14 @@
             <p><input class="btn btn-success" type = "submit" value = "Submit" /></p>
         </form>
     </div>
+
+{% elif title == 'Analytics' %}
+    <div class="">
+        <form action="/analytics" enctype="multipart/form-data" method="post">
+            <p>Game Id - <input class="form-rounded" style="width: 100%" type = "text" name = "game_id" placeholder="Enter Game Id's comma separated (whitespaces are handled)"/></p>
+            <p><input class="btn btn-success" type = "submit" value = "Submit" /></p>
+        </form>
+    </div>
 {% endif %}
 
 {% endblock %}

@@ -730,6 +730,192 @@ def fetch_goals():
                                title='Fetch - Error')
 
 
+def analyze_score(player_resource, dest_resource, destination):
+
+    final_results = []
+
+    for k,v in destination.items():
+        final_results.append( abs(dest_resource.get(k).get('total') -  player_resource.get(v).get('total')))
+
+    return sum(final_results)
+
+
+@app.route('/analytics', methods=['POST', 'GET'])
+def analytics():
+    try:
+        if request.method == 'GET':
+            return render_template('input_game_id.html', title='Analytics')
+        elif request.method == 'POST':
+
+            list_game_id = request.form.get('game_id')
+            list_game_id = list_game_id.replace(" ", "").split(",")
+
+            analytics_results = {}
+            for game_id in list_game_id:
+
+                selected_template = nandor.Lobby.query.filter_by(game_id=game_id).first_or_404().to_dict().get('template_id')  # 3 # direct int value
+                trade_moves = nandor.Trade.query.filter_by(game_id=game_id).filter(nandor.Trade.dst_player != None).count()  # number of not null trade moves
+
+                priorities = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=0).order_by(nandor.Goals.time.desc()).first().to_dict().get('goal')
+                destination_values = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=1).order_by(nandor.Goals.time.desc()).first().to_dict().get('goal')
+                truck_values = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=2).order_by(nandor.Goals.time.desc()).first().to_dict().get('goal')
+                route_values = nandor.Goals.query.filter_by(game_id=game_id).filter_by(src_player=3).order_by(nandor.Goals.time.desc()).first().to_dict().get('goal')
+
+                destination = OrderedDict(
+                    [
+                        (DESTINATION_ID_MAP_RESULTS.get(1), PLAYER_ID_MAP_RESULTS.get(destination_values[0])),
+                        (DESTINATION_ID_MAP_RESULTS.get(2), PLAYER_ID_MAP_RESULTS.get(destination_values[1])),
+                        (DESTINATION_ID_MAP_RESULTS.get(3), PLAYER_ID_MAP_RESULTS.get(destination_values[2])),
+                        (DESTINATION_ID_MAP_RESULTS.get(4), PLAYER_ID_MAP_RESULTS.get(destination_values[3]))
+                    ]
+                )
+
+                dest_keys = list(destination.keys())
+                dest_vals = list(destination.values())
+                truck = OrderedDict(
+                    [
+                        (1, dest_keys[dest_vals.index(PLAYER_ID_MAP_RESULTS.get(truck_values[0]))]),
+                        (2, dest_keys[dest_vals.index(PLAYER_ID_MAP_RESULTS.get(truck_values[1]))]),
+                        (3, dest_keys[dest_vals.index(PLAYER_ID_MAP_RESULTS.get(truck_values[2]))]),
+                        (4, dest_keys[dest_vals.index(PLAYER_ID_MAP_RESULTS.get(truck_values[3]))])
+                    ]
+                )
+
+                route = OrderedDict(
+                    [
+                        (PLAYER_ID_MAP_RESULTS.get(1), route_values[0]),
+                        (PLAYER_ID_MAP_RESULTS.get(2), route_values[1]),
+                        (PLAYER_ID_MAP_RESULTS.get(3), route_values[2]),
+                        (PLAYER_ID_MAP_RESULTS.get(4), route_values[3])
+                    ])
+
+                ideal = {}
+                try:
+                    if selected_template == 3:
+                        ideal = IDEAL['mission-2']
+                    else:
+                        ideal = IDEAL['mission-1']
+                except Exception as error:
+                    raise Exception('Failed to fetch the Ideal mission steps ==> ' + str(error))
+
+                actuals = OrderedDict(
+                    [
+                        ('priority', priorities),
+                        ('destination', destination),
+                        ('trucks', truck),
+                        ('routes', route),
+                        ('num-of-moves', trade_moves)
+                    ]
+                )
+
+                # TRADES TABLE SECTION
+
+                #  initial resource at start of game
+                player_a_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='A').first().player_resource_values()
+                player_b_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='B').first().player_resource_values()
+                player_c_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='C').first().player_resource_values()
+                player_d_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='D').first().player_resource_values()
+
+                player_resource = {
+                    0: player_a_resource,
+                    1: player_b_resource,
+                    2: player_c_resource,
+                    3: player_d_resource
+                }
+
+                dest_shelter_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='Shelter').first().destination_resource_values()
+                dest_bridge_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='Bridge').first().destination_resource_values()
+                dest_hospital_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='Hospital').first().destination_resource_values()
+                dest_center_resource = nandor.PlayerTemplate.query.filter_by(template_id=selected_template).filter_by(name='Distribution Center').first().destination_resource_values()
+
+                dest_center_resource['name'] = 'Center'
+
+                resources = ['food', 'water', 'medicine', 'supply']
+
+                dest_shelter_resource['total'] = sum([dest_shelter_resource.get(x) for x in resources])
+                dest_bridge_resource['total'] = sum([dest_bridge_resource.get(x) for x in resources])
+                dest_hospital_resource['total'] = sum([dest_hospital_resource.get(x) for x in resources])
+                dest_center_resource['total'] = sum([dest_center_resource.get(x) for x in resources])
+
+                dest_resource = {
+                    'Shelter': dest_shelter_resource,
+                    'Center': dest_center_resource,
+                    'Hospital': dest_hospital_resource,
+                    'Bridge': dest_bridge_resource
+                }
+                #
+                # print()
+                # print(f'A = {player_a_resource}')
+                # print(f'B = {player_b_resource}')
+                # print(f'C = {player_c_resource}')
+                # print(f'D = {player_d_resource}')
+                # print()
+                # print(f'Shelter = {dest_shelter_resource}')
+                # print(f'Bridge = {dest_bridge_resource}')
+                # print(f'Hospital = {dest_hospital_resource}')
+                # print(f'Center = {dest_center_resource}')
+                # print()
+
+                trades_all = nandor.Trade.query.filter_by(game_id=game_id).order_by(nandor.Trade.time).filter(
+                    nandor.Trade.dst_player != None).all()
+
+                table_trades = []
+
+                for trade in trades_all:
+                    trade = trade.rewards()
+
+                    src_dst_mapping = {}
+
+                    src_player_id = trade.get('src_player')
+                    src_player_name = PLAYER_ID_MAP_RESULTS.get(src_player_id + 1)
+
+                    dst_player_id = trade.get('dst_player')
+                    dst_player_name = PLAYER_ID_MAP_RESULTS.get(dst_player_id + 1)
+
+                    t_amount = trade.get('offered_amount')
+                    t_resource = trade.get('offered_resource')
+
+                    # print(f"{src_player_name} --> {dst_player_name}\t{t_amount}\t{t_resource.rjust(8)}")
+
+                    player_resource[src_player_id][t_resource] -= t_amount
+                    player_resource[dst_player_id][t_resource] += t_amount
+
+                player_a_resource['total'] = sum([player_a_resource.get(x) for x in resources])
+                player_b_resource['total'] = sum([player_b_resource.get(x) for x in resources])
+                player_c_resource['total'] = sum([player_c_resource.get(x) for x in resources])
+                player_d_resource['total'] = sum([player_d_resource.get(x) for x in resources])
+
+                player_resource = {
+                    'Alpha': player_a_resource,
+                    'Bravo': player_b_resource,
+                    'Charlie': player_c_resource,
+                    'Delta': player_d_resource
+                }
+
+                p_score, d_score, t_score, r_score, m_score, avg_score = calculate_score(actuals, ideal)
+                analytics_score = 0
+                if priorities[0] == 'Bridge':
+                    analytics_score = analyze_score(player_resource, dest_resource, destination)
+                else:  # bridge is 2,3,4
+                    if selected_template == 2 and route_values[0] == 4:
+                        analytics_score = 0
+                    elif selected_template == 3 and route_values[0] == 3:
+                        analytics_score = 0
+                    else:
+                        analytics_score = analyze_score(player_resource, dest_resource, destination)
+
+                analytics_results[game_id] = [p_score, d_score, t_score, r_score, m_score, avg_score, analytics_score]
+            print(analytics_results)
+            return analytics_results
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        file_name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        error = {'class': exc_type, 'file': file_name, 'line': exc_tb.tb_lineno, 'message': e}
+        pp(error)
+        return render_template('beautiful_results.html',
+                               error=error,
+                               title='Results - Error')
+
 
 @app.route('/game/<gameid>', methods=['GET'])
 def game(gameid):
