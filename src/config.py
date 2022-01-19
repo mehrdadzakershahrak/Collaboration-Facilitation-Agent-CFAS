@@ -17,7 +17,7 @@ SESSION_TOKEN_KEY_SIZE = 5
 TRADE_KEY_SIZE = 20
 NUM_PLAYERS = 4
 
-NANDOR_DBCONN = os.getenv('NANDOR_DBCONN', 'mysql://elrond:password@localhost:3306/EXP')  # TODO: DEL ME AFTER DEV
+NANDOR_DBCONN = os.getenv('NANDOR_DBCONN', 'mysql://imeet:pass@123#@localhost:3306/EXP')  # TODO: DEL ME AFTER DEV
 
 SESSION_SECRET_KEY = 'jklajsdfj890234lknasdflkj8'
 
